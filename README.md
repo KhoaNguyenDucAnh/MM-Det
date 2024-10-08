@@ -66,8 +66,7 @@ Each element contains the image path and an analysis on its authenticity.
   {
     "image": "KjJDT0ZaYEw_7.jpg",
     "response": "The image shows a vibrant purple flower and a white flower against a backdrop of lush green leaves. The colors are highly saturated, especially the purple of the flower, which appears almost unnatural. The leaves are arranged in a way that feels repetitive and staged, lacking the random distribution found in real-life foliage. There's an unnatural clarity to the image, with no blurring or imperfections that would be present in a natural setting. \n\nThe excessive saturation and the contrived arrangement of the foliage are strong indicators that the image has been manipulated, making it likely a fabricated image rather than a genuine photograph.\n "
-  },
-  ...
+  }
 ]
 ```
 
@@ -98,8 +97,7 @@ Each element contains an image with a conversation based on forgery detection an
               "value": "The image is likely a spoof image because the unnatural pose of the person in the red shirt suggests that the image has been manipulated.  It is possible that the image was created by combining different images to create a humorous or surreal scenario."
           }
       ]
-    },
-    ...
+    }
 ]
 ```
 
