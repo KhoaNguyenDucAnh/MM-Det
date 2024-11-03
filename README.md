@@ -20,10 +20,13 @@ This repository is the official implementation of [MM-Det](https://arxiv.org/abs
 - [Environment](#environment)
 - [Dataset](#dataset)
 - [Data Preparation](#data-preparation)
-  - [Reconstruction Process](#reconstruction-process)
+  - [Reconstruction Process](#reconstruction-dataset)
+  - [Customized Preparation](#customized-preparation)
   - [Caching Multi-Modal Forgery Representation](#caching-multi-modal-forgery-representation)
 - [Pretrained Weights](#pretrained-weights)
 - [Training](#training)
+- [Finetuning Large Multi-modal Model](#finetuning-large-multi-modal-model)
+- [Overall Traning](#overall-training)
 - [Evaluation](#evaluation)
 
 ## Environment
@@ -207,13 +210,13 @@ In each pth file, the MMFR for every frame is saved as:
 
 
 ## Pre-trained Weights
-We provide the pre-trained weights for our fine-tuned large multimodal model, llava-v1.5-Vicuna-7b from [LLaVA](https://github.com/haotian-liu/LLaVA), which is automatically downloaded. The overall weights for MM-Det without the LMM can be achieved from [weights](https://drive.google.com/drive/folders/1RRNS8F7ETZWrcBu8fvB3pM9qHbmSEEzy?usp=sharing) at `MM-Det/current_model.pth`. Please download and put the weights at `./weights/`.
+We provide the [weights](https://huggingface.co/sparklexfantasy/llava-7b-1.5-rfrd) for our fine-tuned large multi-modal model, which is based on llava-v1.5-Vicuna-7b from [LLaVA](https://github.com/haotian-liu/LLaVA). The overall weights for MM-Det without the LMM can be achieved from [weights](https://drive.google.com/drive/folders/1RRNS8F7ETZWrcBu8fvB3pM9qHbmSEEzy?usp=sharing) at `MM-Det/current_model.pth`. Please download and put the weights at `./weights/`.
 
 
 ## Training
 
 ### Finetuning Large Multi-modal Model
-Our LMM branch is built upon [LLaVA](https://github.com/haotian-liu/LLaVA), with [llava-v1.5-Vicuna-7b](https://huggingface.co/liuhaotian/llava-v1.5-7b) set as the base model. Our fine-tuned LMM weights can be achieved [here](https://huggingface.co/sparklexfantasy/llava-7b-1.5-rfrd)(#pretrained-weights). 
+Our LMM branch is built upon [llava-v1.5-Vicuna-7b](https://huggingface.co/liuhaotian/llava-v1.5-7b) from [LLaVA](https://github.com/haotian-liu/LLaVA).
 
 We directly conduct the visual instruction tuning stage in [LLaVA](https://github.com/haotian-liu/LLaVA#train) on a gemini-generated instruction dataset [RFRD](#rich-forgery-reasoning-dataset). To reproduce our fine-tuned model, run
 
@@ -253,7 +256,7 @@ For datasets in DVF, the recostructed datasets as well as the cached MMFR will b
 
 For customized datasets, prepare the test dataset frames as well as the cached MMFR by following [Data Preparation](#data-preparation). Set `$RECONSTRUCTION_DATASET_ROOT` and `$MM_REPRESENTATION_ROOT` to both data roots. `--cache-mm` is also recommended for save the computational and memory cost of LMM branch.
 
-Make sure the pretrained weights are organize at `./weights.` Then, run the following script for testing on 7 datasets, respectively. Since the entire evaluation is time-costing, `sample-size` can be specified (e.g., 1,000) to reduce time by conducting inference only on limited (1,000) videos. To finish the entire evaluation, please set `sample-size` as `-1`.
+Make sure the pretrained weights are organize at `./weights`. Then, run the following script for testing on 7 datasets, respectively. Since the entire evaluation is time-costing, `sample-size` can be specified (e.g., 1,000) to reduce time by conducting inference only on limited (1,000) videos. To finish the entire evaluation, please set `sample-size` as `-1`.
 
 ```bash
 python test.py \
@@ -279,6 +282,7 @@ We express our sincere appreciation to the following projects.
 
 ## Citation
 
+```
 @misc{song2024learningmultimodalforgeryrepresentation,
       title={On Learning Multi-Modal Forgery Representation for Diffusion Generated Video Detection}, 
       author={Xiufeng Song and Xiao Guo and Jiache Zhang and Qirui Li and Lei Bai and Xiaoming Liu and Guangtao Zhai and Xiaohong Liu},
@@ -288,3 +292,4 @@ We express our sincere appreciation to the following projects.
       primaryClass={cs.CV},
       url={https://arxiv.org/abs/2410.23623}, 
 }
+```
