@@ -1,13 +1,13 @@
 #!/bin/bash
 
-deepspeed --include localhost:1,2,3 --master_port 29601 llava/train/train_mem.py \
+deepspeed --include localhost:0,1,2,3 --master_port 29601 llava/train/train_mem.py \
     --lora_enable True --lora_r 128 --lora_alpha 256 --mm_projector_lr 2e-5 \
     --deepspeed ./scripts/zero3.json \
-    --model_name_or_path /home/data1/songxiufeng/weights/llava-1.5-7b \
+    --model_name_or_path liuhaotian/llava-1.5-7b \
     --version v1 \
-    --data_path /home1/songxiufeng/workspace/replicate/MM-Det/LLaVA/playground/test_formatted.json \
-    --image_folder /home1/songxiufeng/workspace/replicate/MM-Det/outputs/reconstruction_dataset \
-    --vision_tower /home/data1/songxiufeng/weights/clip-vit-large-patch14-336 \
+    --data_path ../data/rfrd_train.json \
+    --image_folder ../data/dvf_recons \
+    --vision_tower openai/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
@@ -15,7 +15,7 @@ deepspeed --include localhost:1,2,3 --master_port 29601 llava/train/train_mem.py
     --image_aspect_ratio pad \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir ./checkpoints/llava-v1.5-lora-svd-33k \
+    --output_dir ./checkpoints/llava-v1.5-7b-rfrd \
     --num_train_epochs 10 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 4 \

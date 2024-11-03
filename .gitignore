@@ -1,5 +1,9 @@
 output*/
-
+expts/
+weights/ViT/
+weights/vqvae/
+weights/MM-Det/
+data/rfrd/*.json
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

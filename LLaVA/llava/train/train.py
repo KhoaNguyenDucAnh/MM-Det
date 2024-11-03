@@ -116,9 +116,6 @@ def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero
     from deepspeed.runtime.zero.partition_parameters import ZeroParamStatus
     if hasattr(param, "ds_id"):
-        with open('zero_3_log.txt', 'a') as f:
-            f.write(str(param.name))
-            f.write('\n')
         if param.ds_status == ZeroParamStatus.NOT_AVAILABLE:
             if not ignore_status:
                 logging.warning(f"{name}: param.ds_status != ZeroParamStatus.NOT_AVAILABLE: {param.ds_status}")
@@ -978,17 +975,9 @@ def train(attn_implementation=None):
         state_dict = get_peft_state_maybe_zero_3(
             model.named_parameters(), training_args.lora_bias
         )
-        with open('llava_train.log', 'a') as f:
-            f.write(f'LoRA all state dict:\n')
-            f.write(str(list(state_dict.keys())))
-            f.write('\n')
         non_lora_state_dict = get_peft_state_non_lora_maybe_zero_3(
             model.named_parameters()
         )
-        with open('llava_train.log', 'a') as f:
-            f.write(f'NonLoRA all state dict:\n')
-            f.write(str(list(non_lora_state_dict.keys())))
-            f.write('\n')
         if training_args.local_rank == 0 or training_args.local_rank == -1:
             model.config.save_pretrained(training_args.output_dir)
             model.save_pretrained(training_args.output_dir, state_dict=state_dict)
