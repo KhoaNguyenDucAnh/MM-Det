@@ -26,7 +26,7 @@ This repository is the official implementation of [MM-Det](https://arxiv.org/abs
 - [Pretrained Weights](#pretrained-weights)
 - [Training](#training)
   - [Finetuning Large Multi-modal Model](#finetuning-large-multi-modal-model)
-  - [Overall Traning](#overall-training)
+  - [Overall Training](#overall-training)
 - [Evaluation](#evaluation)
 
 ## Environment
