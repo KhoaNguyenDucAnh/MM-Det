@@ -6,7 +6,7 @@ This repository is the official implementation of [MM-Det](https://arxiv.org/abs
 
 - We develop an effective detector, MM-Det, based on multimodal forgery representation. 
 
-- We release a benchmark for forgery detection on diffusion videos. We will provide the link sooner.
+- We release Diffusion Video Forensics (DVF) as a diffusion-generated video dataset for forgery detection on diffusion videos. The dataset will be available soon.
 
 <table class="center">
     <tr>
@@ -25,8 +25,8 @@ This repository is the official implementation of [MM-Det](https://arxiv.org/abs
   - [Caching Multi-Modal Forgery Representation](#caching-multi-modal-forgery-representation)
 - [Pretrained Weights](#pretrained-weights)
 - [Training](#training)
-- [Finetuning Large Multi-modal Model](#finetuning-large-multi-modal-model)
-- [Overall Traning](#overall-training)
+  - [Finetuning Large Multi-modal Model](#finetuning-large-multi-modal-model)
+  - [Overall Traning](#overall-training)
 - [Evaluation](#evaluation)
 
 ## Environment
@@ -175,7 +175,7 @@ python prepare_reconstructed_dataset.py -d $VIDEO_DATA_ROOT -o $RECONSTRUCTION_D
 
 Our method take adavantage of Multi-Modal Forgery Representation (MMFR) based on finetuned LLaVA-1.5 for forgery detection. Since the representation is fixed during training and inference, it is recommended to cache the representation before the overall training to reduce time cost. We provide a procedure for caching.
 
-1. Prepare the dataset as [the reconstructed data structure](#reconstruction-process), where the data root is denoted as `$RECONSTRUCTION_DATASET_ROOT`
+1. Prepare the dataset as [the reconstructed data structure](#reconstruction-dataset), where the data root is denoted as `$RECONSTRUCTION_DATASET_ROOT`
 2. Run the following script to conduct inference on frames based on our finetuned LLaVA.
 
 ```bash
@@ -235,7 +235,7 @@ If you plan to fine-tune the LMM based on customized dataset, you can start from
 
 ### Overall Training
 
-Our ST backbone is based on Hybrid-ViT at [pytorch-image-models](https://github.com/huggingface/pytorch-image-models). Our model is based on `vit_base_resnet50_224_in21k`. To start training from a pretrained model, you can get the pretrained weights at [pytorch-image-models](https://github.com/huggingface/pytorch-image-models). We also provide a direct [link](https://drive.google.com/drive/folders/1RRNS8F7ETZWrcBu8fvB3pM9qHbmSEEzy?usp=sharing) at `ViT/vit_base_r50_s16_224.orig_in21k`. Please put downloaded weights at `./weights/`.
+Our ST backbone is based on `vit_base_resnet50_224_in21k` from [pytorch-image-models](https://github.com/huggingface/pytorch-image-models). To start training from a pretrained model, you can get the pretrained weights at [pytorch-image-models](https://github.com/huggingface/pytorch-image-models). We also provide a direct [link](https://drive.google.com/drive/folders/1RRNS8F7ETZWrcBu8fvB3pM9qHbmSEEzy?usp=sharing) at `ViT/vit_base_r50_s16_224.orig_in21k`. Please put downloaded weights at `./weights/`.
 
 Run the following scripts `launch-train.bash` for an overall training on our model. It is recommended to first cache Multi-Modal Forgery Representations at `$MM_REPRESENTATION_ROOT`. In this case, `--cache-mm` is specified, and LMM branch will not be loaded to save huge computational costs and memory usage. `--fix-split` is specified to load training and validation datasets from a fixed split to prevent data leakage between fine-tuning the LMM and the overall training. We make sure there is no overlap between training and validation data in both stages.
 
