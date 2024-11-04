@@ -200,7 +200,7 @@ python prepare_mm_representations.py --cached-data-root $RECONSTRUCTION_DATASET_
 In each pth file, the MMFR for every frame is saved as:
 ```
 {
-  'frame_id_1.jpg': {
+  '{video_id}_{frame_id}.jpg': {
     'visual': visual_feature,
     'textual': textual_feature
   },
@@ -222,7 +222,7 @@ We directly conduct the visual instruction tuning stage in [LLaVA](https://githu
 
 ```bash
 cd LLaVA
-bash scripts/v1_5/finetune_task_llava-1.5-7b_rfrd.sh
+bash scripts/v1_5/finetune_task_lora_llava-1.5-7b_rfrd.sh
 ```
 
 After fine-tuning, to merge the lora weights with the base model, run
@@ -262,7 +262,9 @@ Make sure the pretrained weights are organize at `./weights`. Then, run the foll
 python test.py \
 --classes videocrafter1 zeroscope opensora sora pika stablediffusion stablevideo \
 --ckpt ./weights/MM-Det/current_model.pth \
+--data-root $RECONSTRUCTION_DATASET_ROOT \
 --cache-mm \
+--mm-root $MM_REPRESENTATION_ROOT\
 # when sample-size > 0, only [sample-size] videos are evaluated for each dataset.
 --sample-size -1
 ```

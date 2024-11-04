@@ -6,7 +6,7 @@ class BaseOption:
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument('-d', '--data-root', type=str, default='./data/dvf_recons', help='the dataset root')
         self.parser.add_argument('--ckpt', type=str, default='./output/weights/model.pth', help='the checkpoint path')
-        self.parser.add_argument('--lmm-ckpt', type=str, default='/home/data1/songxiufeng/weights/llava-1.5-7b-nips-v2v3', help='the checkpoint of lmm')
+        self.parser.add_argument('--lmm-ckpt', type=str, default='sparklexfantasy/llava-1.5-7b-rfrd', help='the checkpoint of lmm')
         self.parser.add_argument('--lmm-base', type=str, default=None, help='the base model of lmm')
         self.parser.add_argument('--st-ckpt', type=str, default='weights/ViT/vit_base_r50_s16_224.orig_in21k/jx_vit_base_resnet50_224_in21k-6f7c7740.pth', help='the checkpoint of the pretrained checkpoint of hybrid vit in ST branch')
         self.parser.add_argument('--st-pretrained', type=bool, default=True, help='whether to use the pretrained checkpoint of hybrid vit in ST branch')

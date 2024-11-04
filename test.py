@@ -38,6 +38,10 @@ if __name__ == '__main__':
     state_dict = torch.load(path)
     if 'model_state_dict' in state_dict:
         state_dict = state_dict['model_state_dict']
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        new_state_dict[k.replace('module.', '')] = v
+    state_dict = new_state_dict
     model.load_state_dict(state_dict, strict=config['cache_mm'])
     for dataset_class, test_dataset_config in zip(dataset_classes, test_dataset_configs):
         test_config = config.copy()
