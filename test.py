@@ -1,5 +1,6 @@
 import torch
 import os
+from copy import deepcopy
 from tqdm import tqdm
 
 from options.test_options import TestOption
@@ -44,13 +45,13 @@ if __name__ == '__main__':
     state_dict = new_state_dict
     model.load_state_dict(state_dict, strict=config['cache_mm'])
     for dataset_class, test_dataset_config in zip(dataset_classes, test_dataset_configs):
-        test_config = config.copy()
+        test_config = deepcopy(config)
         test_config['datasets'] = test_dataset_config
         trainer = Trainer(
             config=test_config, 
             model=model, 
             logger=logger,
-        )    
+        )
         trainer.val_dataloader = get_test_dataloader(test_dataset_config)
         if 'sample_size' in config:    # evaluation on sampled data to save time
             stop_count = config['sample_size']

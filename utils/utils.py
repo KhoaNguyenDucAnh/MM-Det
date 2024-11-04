@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import json
+from copy import deepcopy
 
 
 def set_random_seed(seed):
@@ -94,20 +95,20 @@ def get_test_dataset_configs(config):
             "data_root": f'{config["data_root"]}/{real_dataset_class}',
             "dataset_type": "VideoFolderDatasetForReconsWithFn",
             "mode": config["mode"],
-            "selected_cls_label": [("0_real", 0)],
+            "selected_cls_labels": [("0_real", 0)],
             "sample_method": 'entire',
         }
     for dataset_class in dataset_classes:    # load fake datasets
-        dataset_config = default_real_dataset_config.copy()
+        dataset_config = deepcopy(default_real_dataset_config)
         if dataset_class not in dataset_config:
             dataset_config[dataset_class] = {
                 "data_root": f'{config["data_root"]}/{dataset_class}',
                 "dataset_type": "VideoFolderDatasetForReconsWithFn",
                 "mode": config["mode"],
-                "selected_cls_label": [("1_fake", 1)],
+                "selected_cls_labels": [("1_fake", 1)],
                 "sample_method": 'entire',
             }
         else:
-            dataset_config[dataset_class]["selected_cls_label"].append(("1_fake", 1))
+            dataset_config[dataset_class]["selected_cls_labels"].append(("1_fake", 1))
         dataset_configs.append(dataset_config)
     return dataset_configs

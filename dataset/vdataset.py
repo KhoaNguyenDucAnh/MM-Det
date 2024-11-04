@@ -6,6 +6,7 @@ import json
 import numpy as np
 import torch
 import torchvision
+from copy import deepcopy
 from PIL import Image
 from torch.utils.data import Dataset, ConcatDataset, DataLoader, random_split
 
@@ -456,19 +457,6 @@ def collate_video_folder_dataset(batch):
     return torch.stack(datas, dim=0), torch.stack(labels, dim=0)
 
 
-def collate_video_folder_for_recons_dataset(batch):
-    original_data = list()
-    recons_data = list()
-    labels = list()
-    for pack in batch:
-        data, label = pack
-        fns.append(fn)
-        original_data.append(data[0])
-        recons_data.append(data[1])
-        labels.append(label)
-    return (torch.stack(original_data, dim=0), torch.stack(recons_data, dim=0)), torch.stack(labels, dim=0)
-
-
 def collate_video_folder_for_recons_dataset_with_fn(batch):
     fns = list()
     original_data = list()
@@ -485,14 +473,12 @@ def collate_video_folder_for_recons_dataset_with_fn(batch):
 
 __DATASET = {
     "VideoFolderDataset": VideoFolderDataset,
-    "VideoFolderDatasetForRecons": VideoFolderDatasetForRecons,
     "VideoFolderDatasetForReconsWithFn": VideoFolderDatasetForReconsWithFn,
 }
 
 
 __COLLATE_FN = {
     "VideoFolderDataset": collate_video_folder_dataset,
-    "VideoFolderDatasetForRecons": collate_video_folder_for_recons_dataset,
     "VideoFolderDatasetForReconsWithFn": collate_video_folder_for_recons_dataset_with_fn,
 }
 
@@ -524,10 +510,10 @@ def get_train_dataloader(config):
             raise ValueError(f'Expect all datasets in the same type. Get "{_dataset_type}" and "{dataset_type}".')           
         dargs['transform_cfg'] = transformation_cfg
         if 'split' in dargs:
-            train_dargs = dargs.copy()
+            train_dargs = deepcopy(dargs)
             train_dargs['split'] = dargs['split']['train']
             train_datasets.append(__DATASET[dataset_type](**train_dargs))
-            val_dargs = dargs.copy()
+            val_dargs = deepcopy(dargs)
             val_dargs['split'] = dargs['split']['val']
             val_datasets.append(__DATASET[dataset_type](**val_dargs))
         else:
