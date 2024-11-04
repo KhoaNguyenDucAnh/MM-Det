@@ -23,7 +23,7 @@ This repository is the official implementation of [MM-Det](https://arxiv.org/abs
   - [Reconstruction Process](#reconstruction-dataset)
   - [Customized Preparation](#customized-preparation)
   - [Caching Multi-Modal Forgery Representation](#caching-multi-modal-forgery-representation)
-- [Pretrained Weights](#pretrained-weights)
+- [Pre-trained Weights](#pre-trained-weights)
 - [Training](#training)
   - [Finetuning Large Multi-modal Model](#finetuning-large-multi-modal-model)
   - [Overall Training](#overall-training)
@@ -210,7 +210,7 @@ In each pth file, the MMFR for every frame is saved as:
 
 
 ## Pre-trained Weights
-We provide the [weights](https://huggingface.co/sparklexfantasy/llava-7b-1.5-rfrd) for our fine-tuned large multi-modal model, which is based on llava-v1.5-Vicuna-7b from [LLaVA](https://github.com/haotian-liu/LLaVA). The overall weights for MM-Det without the LMM can be achieved from [weights](https://drive.google.com/drive/folders/1RRNS8F7ETZWrcBu8fvB3pM9qHbmSEEzy?usp=sharing) at `MM-Det/current_model.pth`. Please download and put the weights at `./weights/`.
+We provide the [weights](https://huggingface.co/sparklexfantasy/llava-7b-1.5-rfrd) for our fine-tuned large multi-modal model, which is based on llava-v1.5-Vicuna-7b from [LLaVA](https://github.com/haotian-liu/LLaVA). The weights will be automatically downloaded. Besides, the overall weights for MM-Det without the LMM can be achieved from [weights](https://drive.google.com/drive/folders/1RRNS8F7ETZWrcBu8fvB3pM9qHbmSEEzy?usp=sharing) at `MM-Det/current_model.pth`. Please download and put the weights at `./weights/`.
 
 
 ## Training
