@@ -6,7 +6,7 @@ This repository is the official implementation of [MM-Det](https://arxiv.org/abs
 
 - We develop an effective detector, MM-Det, based on multimodal forgery representation. 
 
-- We release Diffusion Video Forensics (DVF) as a diffusion-generated video dataset for forgery detection on diffusion videos. The dataset will be available soon.
+- We release Diffusion Video Forensics (DVF) as a diffusion-generated video dataset for forgery detection on diffusion videos. We provide the dataset links of DVF here. [BaiduNetDisk](https://pan.baidu.com/s/1vDCocTRWedmktmzcP903pQ?pwd=KuRo)(Code: KuRo). The Google drive link is in preparation.
 
 <table class="center">
     <tr>
@@ -75,7 +75,9 @@ Based on these descriptions, we build up an instruction-based dataset for fine-t
 `rfrd.json` contains the overall descriptions, while `rfrd_train.json` is a subset which only contains all training data without validation data to avoid data leakage.
 
 #### Data Structure
-Each element contains an image with a conversation based on forgery detection and reasoning.
+
+Each element contains an image with a conversation based on forgery detection and reasoning. Please set the data root as `$RECONSTRUCTION_DATASET_ROOT` in [Reconstruction Dataset](#reconstruction-dataset), then the path in `image` refers to the corresponding image.
+
 ```json
 [
     {
@@ -108,10 +110,10 @@ Each element contains an image with a conversation based on forgery detection an
 
 ### Reconstruction Dataset
 
-Based on the findings([DIRE](https://github.com/ZhendongWang6/DIRE)) that generative methods always fail to reconstruct details in real videos, we extend this method by utilizing a VQVAE trained on ImageNet to reconstruct each frame. The reconstructed data structure is as follows.
+Based on the findings([DIRE](https://github.com/ZhendongWang6/DIRE)) that generative methods always fail to reconstruct details in real videos, we extend this method by utilizing a VQVAE trained on ImageNet to reconstruct each frame. The reconstruction dataset structure is as follows. For all videos in DVF, we provide a ready reconstruction dataset at [BaiduNetDisk](https://pan.baidu.com/s/1oJarzo09jx8Tc1L3GihdSA?pwd=moyu) (Code: moyu). The Google drive link is in preparation.
 
 ```
---$FRAME_DATA_ROOT
+--$RECONSTRUCTION_DATASET_ROOT
   | -- dataset A
     | -- class A1
       | -- original    # frame sequences for original videos
@@ -173,7 +175,9 @@ python prepare_reconstructed_dataset.py -d $VIDEO_DATA_ROOT -o $RECONSTRUCTION_D
 
 ### Caching Multi-Modal Forgery Representation
 
-Our method take adavantage of Multi-Modal Forgery Representation (MMFR) based on finetuned LLaVA-1.5 for forgery detection. Since the representation is fixed during training and inference, it is recommended to cache the representation before the overall training to reduce time cost. We provide a procedure for caching.
+Our method take adavantage of Multi-Modal Forgery Representation (MMFR) based on finetuned LLaVA-1.5 for forgery detection. Since the representation is fixed during training and inference, it is recommended to cache the representation before the overall training to reduce time cost. For all videos in DVF, we provide a ready dataset for cached MMFR at [BaiduNetDisk](https://pan.baidu.com/s/1ODAfIMRzXlroXG30i5_Bcg?pwd=Haru) (Code: Haru).
+
+For customized datasets, we provide a procedure for caching.
 
 1. Prepare the dataset as [the reconstructed data structure](#reconstruction-dataset), where the data root is denoted as `$RECONSTRUCTION_DATASET_ROOT`
 2. Run the following script to conduct inference on frames based on our finetuned LLaVA.

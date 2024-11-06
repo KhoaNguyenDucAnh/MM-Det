@@ -1,7 +1,7 @@
 CUDA_VISIBLE_DEVICES=3
 python test.py \
-    --classes stablediffusion sora\
+    --classes videocrafter1 zeroscope opensora sora pika stablediffusion stablevideo \
     --ckpt weights/MM-Det/current_model.pth \
-    --mm-root ./outputs/mm_representations \
+    --mm-root ./data/DVF_mm_representations \
     --cache-mm \
     --sample-size -1
