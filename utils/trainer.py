@@ -174,7 +174,7 @@ class Trainer:
     
     def save_model(self, tag='latest'):
         os.makedirs(os.path.join('expts', self.config['expt'], 'checkpoints'), exist_ok=True)
-        model_state_dict = self.model_state_dict()
+        model_state_dict = self.model.state_dict()
         for k in model_state_dict:
             if 'mm_encoder.model' in k:    # deprecate frozen parameters from LMM branch
                 del(model_state_dict[k])
