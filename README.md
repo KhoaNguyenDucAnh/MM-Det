@@ -6,7 +6,7 @@ This repository is the official implementation of [MM-Det](https://arxiv.org/abs
 
 - We develop an effective detector, MM-Det, based on multimodal forgery representation. 
 
-- We release Diffusion Video Forensics (DVF) as a diffusion-generated video dataset for forgery detection on diffusion videos. We provide the dataset links of DVF here. [BaiduNetDisk](https://pan.baidu.com/s/1vDCocTRWedmktmzcP903pQ?pwd=KuRo)(Code: KuRo). The Google drive link is in preparation.
+- We release Diffusion Video Forensics (DVF) as a diffusion-generated video dataset for forgery detection on diffusion videos. We provide the dataset links of DVF here. [BaiduNetDisk](https://pan.baidu.com/s/1vDCocTRWedmktmzcP903pQ?pwd=KuRo)(Code: KuRo). [google driver](https://drive.google.com/drive/folders/1NxCvJVPSxV2Mib5NaNj5Cf2WnnjrqpMb?usp=drive_link)
 
 <table class="center">
     <tr>
@@ -110,7 +110,7 @@ Each element contains an image with a conversation based on forgery detection an
 
 ### Reconstruction Dataset
 
-Based on the findings([DIRE](https://github.com/ZhendongWang6/DIRE)) that generative methods always fail to reconstruct details in real videos, we extend this method by utilizing a VQVAE trained on ImageNet to reconstruct each frame. The reconstruction dataset structure is as follows. For all videos in DVF, we provide a ready reconstruction dataset at [BaiduNetDisk](https://pan.baidu.com/s/1oJarzo09jx8Tc1L3GihdSA?pwd=moyu) (Code: moyu). The Google drive link is in preparation.
+Based on the findings([DIRE](https://github.com/ZhendongWang6/DIRE)) that generative methods always fail to reconstruct details in real videos, we extend this method by utilizing a VQVAE trained on ImageNet to reconstruct each frame. The reconstruction dataset structure is as follows. For all videos in DVF, we provide a ready reconstruction dataset at [BaiduNetDisk](https://pan.baidu.com/s/1oJarzo09jx8Tc1L3GihdSA?pwd=moyu) (Code: moyu).
 
 ```
 --$RECONSTRUCTION_DATASET_ROOT
