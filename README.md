@@ -248,7 +248,7 @@ python train.py \
 --data-root $RECONSTRUCTION_DATASET_ROOT \
 --classes youtube stablevideodiffusion \
 --fix-split \
---split ./splits \
+--split-path ./splits \
 --cache-mm \
 --mm-root $MM_REPRESENTATION_ROOT \
 --expt $EXPT_NAME \
