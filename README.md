@@ -237,7 +237,7 @@ python test.py \
 
 Known Issues:
 
-- We have found that there is a deviation in the training process when fine-tuning large language model and the entire framework. We are handling this problem and will provide the training scripts sooner.
+- From the feedback we’ve received, we noticed a deviation in the training process when fine-tuning the large language model, making it difficult to reproduce our reported results fully in some cases. We are now resolving this issue and will share the updated training scripts soon. Currently, we provide the inference interface first.
 
 
 ## Acknowledgement
