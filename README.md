@@ -24,10 +24,8 @@ This repository is the official implementation of [MM-Det](https://arxiv.org/abs
   - [Customized Preparation](#customized-preparation)
   - [Caching Multi-Modal Forgery Representation](#caching-multi-modal-forgery-representation)
 - [Pre-trained Weights](#pre-trained-weights)
-- [Training](#training)
-  - [Finetuning Large Multi-modal Model](#finetuning-large-multi-modal-model)
-  - [Overall Training](#overall-training)
 - [Evaluation](#evaluation)
+- [Training](#training)
 
 ## Environment
 
@@ -216,44 +214,6 @@ In each pth file, the MMFR for every frame is saved as:
 ## Pre-trained Weights
 We provide the [weights](https://huggingface.co/sparklexfantasy/llava-7b-1.5-rfrd) for our fine-tuned large multi-modal model, which is based on llava-v1.5-Vicuna-7b from [LLaVA](https://github.com/haotian-liu/LLaVA). The weights will be automatically downloaded. Besides, the overall weights for MM-Det without the LMM can be achieved from [weights](https://drive.google.com/drive/folders/1RRNS8F7ETZWrcBu8fvB3pM9qHbmSEEzy?usp=sharing) at `MM-Det/current_model.pth`. Please download and put the weights at `./weights/`.
 
-
-## Training
-
-### Finetuning Large Multi-modal Model
-Our LMM branch is built upon [llava-v1.5-Vicuna-7b](https://huggingface.co/liuhaotian/llava-v1.5-7b) from [LLaVA](https://github.com/haotian-liu/LLaVA).
-
-We directly conduct the visual instruction tuning stage in [LLaVA](https://github.com/haotian-liu/LLaVA#train) on a gemini-generated instruction dataset [RFRD](#rich-forgery-reasoning-dataset). To reproduce our fine-tuned model, run
-
-```bash
-cd LLaVA
-bash scripts/v1_5/finetune_task_lora_llava-1.5-7b_rfrd.sh
-```
-
-After fine-tuning, to merge the lora weights with the base model, run
-```
-cd LLaVA
-python scripts/merge_lora_weights.py --model-path $CHECKPOINT_PATH --model-base $BASE_MODEL_PATH --save-model-path $LMM_OUTPUT_PATH
-```
-
-If you plan to fine-tune the LMM based on customized dataset, you can start from [llava-v1.5-Vicuna-7b](https://huggingface.co/liuhaotian/llava-v1.5-7b) as the base model. Please following the [instruction](https://github.com/haotian-liu/LLaVA/blob/main/docs/Finetune_Custom_Data.md) of [LLaVA](https://github.com/haotian-liu/LLaVA) to prepare your dataset and conduct fine-tuning.
-
-### Overall Training
-
-Our ST backbone is based on `vit_base_resnet50_224_in21k` from [pytorch-image-models](https://github.com/huggingface/pytorch-image-models). To start training from a pretrained model, you can get the pretrained weights at [pytorch-image-models](https://github.com/huggingface/pytorch-image-models). We also provide a direct [link](https://drive.google.com/drive/folders/1RRNS8F7ETZWrcBu8fvB3pM9qHbmSEEzy?usp=sharing) at `ViT/vit_base_r50_s16_224.orig_in21k`. Please put downloaded weights at `./weights/`.
-
-Run the following scripts `launch-train.bash` for an overall training on our model. It is recommended to first cache Multi-Modal Forgery Representations at `$MM_REPRESENTATION_ROOT`. In this case, `--cache-mm` is specified, and LMM branch will not be loaded to save huge computational costs and memory usage. `--fix-split` is specified to load training and validation datasets from a fixed split to prevent data leakage between fine-tuning the LMM and the overall training. We make sure there is no overlap between training and validation data in both stages.
-
-```bash
-python train.py \
---data-root $RECONSTRUCTION_DATASET_ROOT \
---classes youtube stablevideodiffusion \
---fix-split \
---split ./splits \
---cache-mm \
---mm-root $MM_REPRESENTATION_ROOT \
---expt $EXPT_NAME \
-```
-
 ## Evaluation
 
 For datasets in DVF, the recostructed datasets as well as the cached MMFR will be provided. (We will make it available soon.) Set `$RECONSTRUCTION_DATASET_ROOT` as `DVF_recons` and `$MM_REPRESENTATION_ROOT` as `mm_representations`.
@@ -272,6 +232,13 @@ python test.py \
 # when sample-size > 0, only [sample-size] videos are evaluated for each dataset.
 --sample-size -1
 ```
+
+## Training
+
+Known Issues:
+
+- We have found that there is a deviation in the training process when fine-tuning large language model and the entire framework. We are handling this problem and will provide the training scripts sooner.
+
 
 ## Acknowledgement
 
