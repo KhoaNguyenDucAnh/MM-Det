@@ -56,7 +56,7 @@ We provide the [weights](https://huggingface.co/sparklexfantasy/llava-7b-1.5-rfr
 
 ### Reconstruction Dataset
 
-Based on the findings([DIRE](https://github.com/ZhendongWang6/DIRE)) that generative methods always fail to reconstruct details in real videos, we extend this method by utilizing a VQVAE trained on ImageNet to reconstruct each frame. The reconstruction dataset structure is as follows. For all videos in DVF, we provide a ready reconstruction dataset at [BaiduNetDisk](https://pan.baidu.com/s/1oJarzo09jx8Tc1L3GihdSA?pwd=moyu) (Code: moyu).
+For all videos in DVF, we provide a ready reconstruction dataset at [BaiduNetDisk](https://pan.baidu.com/s/1oJarzo09jx8Tc1L3GihdSA?pwd=moyu) (Code: moyu).
 
 ### Multi-Modal Forgery Representation
 
