@@ -17,11 +17,15 @@ This repository is the official implementation of [MM-Det](https://arxiv.org/abs
   - [Contents](#contents)
   - [Environment](#environment)
   - [Diffusion Video Forensics Dataset](#diffusion-video-forensics-dataset)
+    - [Full Version](#full-version)
+    - [Tiny Version](#tiny-version)
   - [Preparation](#preparation)
     - [Pre-trained Weights](#pre-trained-weights)
     - [Reconstruction Dataset](#reconstruction-dataset)
     - [Multi-Modal Forgery Representation](#multi-modal-forgery-representation)
   - [Evaluation](#evaluation)
+    - [Data Structure](#data-structure)
+    - [Inference](#inference)
   - [Training](#training)
   - [Acknowledgement](#acknowledgement)
   - [Citation](#citation)
@@ -45,7 +49,16 @@ pip install flash-attn==2.5.8 --no-build-isolation
 ```
 
 ## Diffusion Video Forensics Dataset
-We release Diffusion Video Forensics (DVF) as the benchmark for forgery video detection, which can be downloaded via links: [BaiduNetDisk](https://pan.baidu.com/s/14d-_jLB_yUwKzOosrMHMvg?pwd=296c)(Code: 296c). [google driver](https://drive.google.com/drive/folders/1NxCvJVPSxV2Mib5NaNj5Cf2WnnjrqpMb?usp=drive_link)
+
+### Full Version
+We release Diffusion Video Forensics (DVF) as the benchmark for forgery video detection. 
+
+The full version of DVF can be downloaded via links: [BaiduNetDisk](https://pan.baidu.com/s/14d-_jLB_yUwKzOosrMHMvg?pwd=296c)(Code: 296c). [google driver](https://drive.google.com/drive/folders/1NxCvJVPSxV2Mib5NaNj5Cf2WnnjrqpMb?usp=drive_link)
+
+
+### Tiny Version
+
+We also release a tiny version of DVF for quickstart, in which each dataset contains 10 videos, with each video no more than 100 frames. This tiny version can be downloaded via [BaiduNetDisk](https://pan.baidu.com/s/1FeI9OH_7rqTaTd-ldPCAIg?pwd=77x3) (Code:77x3). We also provide the corresponding reconsturction dataset and MM representations for evaluation in the above link. More information for evaluation can be found at [here](#evaluation).
 
 <table class="center">
     <tr>
@@ -68,8 +81,31 @@ For all videos in DVF, we provide a ready dataset for cached MMFR at [BaiduNetDi
 
 ## Evaluation
 
-Set `$RECONSTRUCTION_DATASET_ROOT` as `DVF_recons` and `$MM_REPRESENTATION_ROOT` as `mm_representations`. Set `$RECONSTRUCTION_DATASET_ROOT` and `$MM_REPRESENTATION_ROOT` to both data roots. `--cache-mm` is also recommended for save the computational and memory cost of LMM branch.
-Make sure the pre-trained weights are organized at `./weights`. Then, run the following script for testing on 7 datasets respectively. 
+
+### Data Structure
+For evaluation on the tiny version of DVF, put all files of [the tiny version](#tiny-version) into `./data`. The data structure is organized as follows:
+
+```
+-- data
+  | -- DVF_tiny
+  | -- DVF_recons_tiny    # $RECONSTRUCTION_DATASET_ROOT
+  | -- mm_representations_tiny  # $MM_REPRESENTATION_ROOT
+```
+
+For evaluation on the full version of DVF, download the data at [Reconstruction Dataset](#reconstruction-dataset) and [Multi-Modal Forgery Representation](#multi-modal-forgery-representation). Then put them into `./data`. The data structure is organized as follows:
+
+```
+-- data
+  | -- DVF
+  | -- DVF_recons   # $RECONSTRUCTION_DATASET_ROOT
+  | -- mm_representations  # $MM_REPRESENTATION_ROOT
+```
+
+For evaluation on customized dataset, details of data preparation can be found at [dataset/readme.md](dataset/readme.md).
+
+### Inference
+Make sure the pre-trained weights are organized at `./weights`. Please set `$RECONSTRUCTION_DATASET_ROOT` and `$MM_REPRESENTATION_ROOT` as the data roots provided at [Data Structure](#data-structure) in `launch-test.sh`. `--cache-mm` is recommended for save the computational and memory cost of LMM branch. Then run `launch-test.sh` for testing on 7 datasets respectively.
+
 ```bash
 python test.py \
 --classes videocrafter1 zeroscope opensora sora pika stablediffusion stablevideo \
@@ -77,11 +113,12 @@ python test.py \
 --data-root $RECONSTRUCTION_DATASET_ROOT \
 --cache-mm \
 --mm-root $MM_REPRESENTATION_ROOT\
-# when sample-size > 0, only [sample-size] videos are evaluated for each dataset.
+# when sample-size > 0, only [sample-size] videos are evaluated for each dataset for pattial evaluation.
 --sample-size -1
 ```
 
 Since the entire evaluation is time-costing, `sample-size` can be specified (e.g., 1,000) to reduce time by conducting inference only on limited (1,000) videos. To finish the entire evaluation, please set `sample-size` as `-1`.
+
 
 ## Training
 

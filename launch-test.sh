@@ -1,4 +1,3 @@
-CUDA_VISIBLE_DEVICES=3
 python test.py \
     --classes videocrafter1 zeroscope opensora sora pika stablediffusion stablevideo \
     --ckpt weights/MM-Det/current_model.pth \
