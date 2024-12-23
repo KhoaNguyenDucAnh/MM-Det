@@ -143,13 +143,12 @@ We express our sincere appreciation to the following projects.
 ## Citation
 
 ```
-@misc{song2024learningmultimodalforgeryrepresentation,
-      title={On Learning Multi-Modal Forgery Representation for Diffusion Generated Video Detection}, 
-      author={Xiufeng Song and Xiao Guo and Jiache Zhang and Qirui Li and Lei Bai and Xiaoming Liu and Guangtao Zhai and Xiaohong Liu},
-      year={2024},
-      eprint={2410.23623},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2410.23623}, 
+@inproceedings{ on-learning-multi-modal-forgery-representation-for-diffusion-generated-video-detection,
+  author = { Xiufeng Song and Xiao Guo and Jiache Zhang and Qirui Li and Lei Bai and Xiaoming Liu and Guangtao Zhai and Xiaohong Liu },
+  title = { On Learning Multi-Modal Forgery Representation for Diffusion Generated Video Detection },
+  booktitle = { Proceeding of Thirty-eighth Conference on Neural Information Processing Systems },
+  address = { Vancouver, Canada },
+  month = { December },
+  year = { 2024 },
 }
 ```
