@@ -27,6 +27,10 @@ This repository is the official implementation of [MM-Det](https://arxiv.org/abs
     - [Data Structure](#data-structure)
     - [Inference](#inference)
   - [Training](#training)
+    - [LMM Fine-tuning (Not necessary)](#lmm-fine-tuning-not-necessary)
+    - [Overall Training](#overall-training)
+      - [Preliminary Setup](#preliminary-setup)
+      - [Training](#training-1)
   - [Acknowledgement](#acknowledgement)
   - [Citation](#citation)
 
@@ -122,10 +126,27 @@ Since the entire evaluation is time-costing, `sample-size` can be specified (e.g
 
 ## Training
 
-Known Issues:
+### LMM Fine-tuning (Not necessary)
+Our LMM branch is built upon [LLaVA](https://github.com/haotian-liu/LLaVA), with [llava-v1.5-Vicuna-7b](https://huggingface.co/liuhaotian/llava-v1.5-7b) set as the base model. Our fine-tuned LMM weights can be achieved [here](https://huggingface.co/sparklexfantasy/llava-7b-1.5-rfrd)(#pretrained-weights). It is recommended to start the overall training directly using our pretrained LMM weights, otherwise the fine-tuning result may not be steady.
 
-- From the feedback we’ve received, we noticed a deviation in the training process when fine-tuning the large language model, making it difficult to reproduce our reported results fully in some cases. We are now resolving this issue and will share the updated training scripts soon. Currently, we provide the inference interface first.
+We directly conduct the visual instruction tuning stage in [LLaVA](https://github.com/haotian-liu/LLaVA#train) on a gemini-generated instruction dataset [RFRD](placeholder). For more information on customized LMM fine-tuning, please refer to [LLaVA](https://github.com/haotian-liu/LLaVA).
 
+### Overall Training
+
+#### Preliminary Setup
+Our ST backbone is based on Hybrid-ViT at [pytorch-image-models](https://github.com/huggingface/pytorch-image-models). Our model is based on `vit_base_resnet50_224_in21k`. To start training from a pretrained model, you can get the pretrained weights at [pytorch-image-models](https://github.com/huggingface/pytorch-image-models). We also provide a direct [link](https://drive.google.com/drive/folders/1RRNS8F7ETZWrcBu8fvB3pM9qHbmSEEzy?usp=sharing) at `ViT/vit_base_r50_s16_224.orig_in21k`. Please put downloaded weights at `./weights/`.
+
+#### Training
+Run the following scripts `launch-train.bash` for an overall training on our model. It is recommended to first cache Multi-Modal Forgery Representations at `$MM_REPRESENTATION_ROOT`. In this case, `--cache-mm` is specified, and LMM branch will not be loaded to save huge computational costs and memory usage. 
+
+```bash
+python train.py \
+--data-root $RECONSTRUCTION_DATASET_ROOT \
+--classes youtube stablevideodiffusion \
+--cache-mm \
+--mm-root $MM_REPRESENTATION_ROOT \
+--expt $EXPT_NAME \
+```
 
 ## Acknowledgement
 

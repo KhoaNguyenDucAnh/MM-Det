@@ -28,8 +28,9 @@ def construct_cached_mm_representations(args):
             labels = filter(lambda label: os.path.isdir(os.path.join(args['data_root'], dname, label)), labels)
         cached_mm_representations[dname] = {}
         for label in labels:
-            mm_representation = torch.load(os.path.join(args['mm_root'], dname, label, 'mm_representation.pth'))            
-            cached_mm_representations[dname][label] = mm_representation
+            if os.path.exists(os.path.join(args['mm_root'], dname, label)):
+                mm_representation = torch.load(os.path.join(args['mm_root'], dname, label, 'mm_representation.pth'))            
+                cached_mm_representations[dname][label] = mm_representation
     # build index table for search
     cached_mm_representations_index = {}
     for dname in cached_mm_representations:
@@ -43,6 +44,7 @@ def construct_cached_mm_representations(args):
                     cached_mm_representations_index[dname][label][prefix] = [int(index)]
                 else:
                     cached_mm_representations_index[dname][label][prefix].append(int(index))
+    
     return cached_mm_representations, cached_mm_representations_index
 
 
@@ -77,11 +79,13 @@ def get_train_dataset_config(config):
             "data_root": f'{config["data_root"]}/{dataset_class}',
             "dataset_type": "VideoFolderDatasetForReconsWithFn",
             "mode": config["mode"],
-            'split': {
-                'train': json.load(open(os.path.join(config['split_path'], 'train.json')))[dataset_class] if config['fix_split'] and config["mode"] == 'train' else None,
-                'val': json.load(open(os.path.join(config['split_path'], 'val.json')))[dataset_class] if config['fix_split'] and config["mode"] == 'train' else None,
-            }
+            "selected_cls_labels": [("0_real", 0), ("1_fake", 1)]
         }
+        if config['fix_split'] and config["mode"] == 'train':
+            dataset_config[dataset_class]['split'] = {
+                'train': json.load(open(os.path.join(config['split_path'], 'train.json')))[dataset_class],
+                'val': json.load(open(os.path.join(config['split_path'], 'val.json')))[dataset_class]
+            }
     return dataset_config
 
 

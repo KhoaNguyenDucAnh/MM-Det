@@ -202,6 +202,8 @@ class VideoFolderDatasetForRecons(FolderDataset):
         data_info = []
         for cls in classes:
             ddir = os.path.join(dir, cls)
+            if not os.path.exists(ddir):
+                continue
             fds = os.listdir(ddir)
             assert('original' in fds and 'recons' in fds)
             data_elems = dict()
@@ -346,6 +348,8 @@ class VideoFolderDatasetForReconsWithFn(FolderDataset):
         data_info = []
         for cls in classes:
             ddir = os.path.join(dir, cls)
+            if not os.path.exists(ddir):
+                continue
             fds = os.listdir(ddir)
             assert('original' in fds and 'recons' in fds)
             data_elems = dict()
@@ -438,7 +442,7 @@ class VideoFolderDatasetForReconsWithFn(FolderDataset):
         return os.path.join(video_ddir, f'{video_prefix}__{sample_index[0]}'), (torch.stack(original_frames, dim=0), torch.stack(recons_frames, dim=0)), label
     
     
-def random_split_dataset(dataset, split_ratio, seed=42):
+def random_split_dataset(dataset, split_ratio, seed=100):
     total_ratio = sum(split_ratio)
     split_ratio = [x / total_ratio for x in split_ratio]
     dataset_len = len(dataset)
@@ -520,10 +524,9 @@ def get_train_dataloader(config):
             train_datasets.append(__DATASET[dataset_type](**dargs))
     train_datasets = ConcatDataset(train_datasets)
     if len(val_datasets) == 0:    # not split yet
-        train_datasets, val_datasets = random_split_dataset(train_datasets, config["split_ratio"], seed=42)
+        train_datasets, val_datasets = random_split_dataset(train_datasets, config["split_ratio"])
     else:
         val_datasets = ConcatDataset(val_datasets)
-        
     train_params = {'batch_size': config["bs"],
             'shuffle': (config["mode"]=='train'),
             'num_workers': config["num_workers"] * config["gpus"],
