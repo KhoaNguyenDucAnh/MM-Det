@@ -62,7 +62,7 @@ The full version of DVF can be downloaded via links: [BaiduNetDisk](https://pan.
 
 ### Tiny Version
 
-We also release a tiny version of DVF for quickstart, in which each dataset contains 10 videos, with each video no more than 100 frames. This tiny version can be downloaded via [BaiduNetDisk](https://pan.baidu.com/s/1FeI9OH_7rqTaTd-ldPCAIg?pwd=77x3) (Code:77x3). We also provide the corresponding reconsturction dataset and MM representations for evaluation in the above link. More information for evaluation can be found at [here](#evaluation).
+We also release a tiny version of DVF for quickstart, in which each dataset contains 10 videos, with each video no more than 100 frames. This tiny version can be downloaded via [BaiduNetDisk](https://pan.baidu.com/s/1FeI9OH_7rqTaTd-ldPCAIg?pwd=77x3) (Code:77x3), [google driver](https://drive.google.com/drive/folders/1dtZXrIkbuo_6nkhetFR008KAaCz8JzBL?usp=sharing). We also provide the corresponding reconsturction dataset and MM representations for evaluation in the above link. More information for evaluation can be found at [here](#evaluation).
 
 <table class="center">
     <tr>
