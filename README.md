@@ -87,8 +87,12 @@ For the full version of DVF, we provide a ready dataset for cached MMFR at [Baid
 
 
 ### Data Structure
-For evaluation on the tiny version of DVF, put all files of [the tiny version](#tiny-version) into `./data`. The data structure is organized as follows:
-
+For evaluation on the tiny version of DVF, put all files of [the tiny version](#tiny-version) into `./data`. Using follow unzipping commands. 
+```
+    zip -FF DVF_recons_tiny.zip --out DVF_recons_full.zip
+    for file in DVF_recons_full.zip DVF_tiny.zip mm_representations_tiny.zip; do unzip "$file"; done
+```
+Then, the data structure will be as follows:
 ```
 -- data
   | -- DVF_tiny
@@ -117,8 +121,8 @@ python test.py \
 --data-root $RECONSTRUCTION_DATASET_ROOT \
 --cache-mm \
 --mm-root $MM_REPRESENTATION_ROOT\
-# when sample-size > 0, only [sample-size] videos are evaluated for each dataset for pattial evaluation.
---sample-size -1
+--sample-size -1 \
+## --lmm-ckpt llava-7b-1.5-rfrd ## In case one cannot download via the huggingface interface and then can load from the local. 
 ```
 
 Since the entire evaluation is time-costing, `sample-size` can be specified (e.g., 1,000) to reduce time by conducting inference only on limited (1,000) videos. To finish the entire evaluation, please set `sample-size` as `-1`.
