@@ -3,11 +3,11 @@ import json
 import os
 
 import cv2
-import zarr
 import lightning as L
 import numpy as np
 import torch
 import torch.utils.data as data
+import zarr
 from einops import rearrange
 from lightning.pytorch.callbacks import BasePredictionWriter
 from torch.nn import functional as F
@@ -71,53 +71,35 @@ class AV1MDataModule(L.LightningDataModule):
         )
 
 
-class HDF5Dataset(data.Dataset):
-    def __init__(self, file_path, output_hdf5):
-        self.file_path = file_path
-        self.output_hdf5 = output_hdf5
-
-        self.index_to_dataset = []
-        with h5py.File(os.path.join(self.file_path, self.output_hdf5), "w") as file:
-            for hdf5_file in os.listdir(file_path):
-                if "hdf5" in hdf5_file and hdf5_file != output_hdf5:
-                    file[hdf5_file] = h5py.ExternalLink(
-                        os.path.join(self.file_path, hdf5_file), "/"
-                    )
-                    for video in list(file[hdf5_file].keys()):
-                        self.index_to_dataset.append(os.path.join(hdf5_file, video))
-
-        self.dataset = None
-
-    def __getitem__(self, index):
-        if self.dataset is None:
-            self.dataset = h5py.File(
-                os.path.join(self.file_path, self.output_hdf5), "r"
-            )
-        return (
-            self.index_to_dataset[index],
-            np.array(self.dataset[self.index_to_dataset[index]]),
-        )
+class ZarrLazyDataset(data.Dataset):
+    def __init__(self, zarr_group):
+        self.zarr_group = zarr_group
+        self.keys = list(zarr_group.array_keys())
 
     def __len__(self):
-        return len(self.index_to_dataset)
+        return len(self.keys)
 
-    def close(self):
-        if self.dataset is not None:
-            self.dataset.close()
-            self.dataset = None
+    def __getitem__(self, idx):
+        key = self.keys[idx]
+        array = self.zarr_group[key]
+        return key, array[:]
 
 
 class ReconstructDataModule(L.LightningDataModule):
 
-    def __init__(self, file_path, output_hdf5, batch_size, num_workers):
+    def __init__(self, input_file, batch_size, num_workers):
         super().__init__()
-        self.file_path = file_path
-        self.output_hdf5 = output_hdf5
+        self.input_file = input_file
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-    def prepare_data(self):
-        self.dataset = HDF5Dataset(self.file_path, self.output_hdf5)
+    # def prepare_data(self):
+    #     file = zarr.open_group(self.input_file, mode="r")
+    #     self.dataset = list(file["original"].arrays())
+
+    def setup(self, stage=None):
+        zarr_file = zarr.open_group(self.input_file, mode="r")
+        self.dataset = ZarrLazyDataset(zarr_file["original"])
 
     def predict_dataloader(self):
         return data.DataLoader(
@@ -127,15 +109,11 @@ class ReconstructDataModule(L.LightningDataModule):
             collate_fn=lambda batch: batch,
         )
 
-    def teardown(self, stage):
-        self.dataset.close()
-
 
 class CustomWriter(BasePredictionWriter):
-    def __init__(self, output_path, hdf5_filename):
+    def __init__(self, output_file):
         super().__init__("batch")
-        self.output_path = output_path
-        self.hdf5_filename = hdf5_filename
+        self.output_file = output_file
 
     def write_on_batch_end(
         self,
@@ -148,25 +126,16 @@ class CustomWriter(BasePredictionWriter):
         dataloader_idx,
     ):
         if prediction == None:
-            print(batch)
             return
-        with zarr.open(
-            os.path.join(
-                self.output_path, str(trainer.global_rank) + "_" + self.hdf5_filename
-            ),
-            "a",
-        ) as file:
-            for key, value in prediction.items():
-                if key in file:
-                    file[key][...] = value
-                else:
-                    file.create_dataset(
-                        key,
-                        data=value,
-                        # chunks=True,
-                        compression="gzip",
-                        # compression_opts=6,
-                    )
+        file = zarr.open_group(self.output_file, mode="a")
+        for key, value in prediction.items():
+            array = file.create_array(
+                name=key,
+                shape=value.shape,
+                dtype=value.dtype,
+                overwrite=True,
+            )
+            array[...] = value
 
 
 class VideoFrameExtractor(L.LightningModule):
@@ -189,7 +158,9 @@ class VideoFrameExtractor(L.LightningModule):
                 extracted_frames.append(frame)
             vc.release()
 
-            extracted_batch[video_path.replace("/", "_")] = np.array(extracted_frames)
+            extracted_batch[os.path.join("original", video_path.replace("/", "_"))] = (
+                np.array(extracted_frames)
+            )
         return extracted_batch
 
 
@@ -228,7 +199,7 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
     def predict_step(self, batch):
         reconstructed_batch = {}
         for video_path, extracted_frames in batch:
-            reconstructed_frames = np.zeros(extracted_frames.shape)
+            reconstructed_frames = np.empty_like(extracted_frames, dtype=np.uint8)
             for i in range(0, extracted_frames.shape[0], self.batch_size):
                 frames_batch = torch.stack(
                     [
@@ -260,44 +231,41 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
                 reconstructed_frames[i : i + self.batch_size] = (
                     reconstructed_frames_batch
                 )
-            reconstructed_batch[video_path] = reconstructed_frames
+            reconstructed_batch[os.path.join("reconstruct", video_path)] = (
+                reconstructed_frames
+            )
         return reconstructed_batch
 
 
 if __name__ == "__main__":
     args = parse_args()
 
-    original_path = os.path.join(args.output, "original")
-    reconstruct_path = os.path.join(args.output, "reconstruct")
+    os.makedirs(args.output, exist_ok=True)
+    zarr_file = os.path.join(args.output, "output.zarr")
+    prediction_writer = CustomWriter(output_file=zarr_file)
 
-    os.makedirs(original_path, exist_ok=True)
-    os.makedirs(reconstruct_path, exist_ok=True)
-
-    if True:
+    if False:
         av1m_datamodule = AV1MDataModule(
             metadata_file="data/train_metadata.json",
             data_root="data/train/train",
-            batch_size=8,
-            num_workers=16,
+            batch_size=6,
+            num_workers=6,
         )
         video_frame_extractor = VideoFrameExtractor()
         trainer = L.Trainer(
             accelerator="cpu",
-            devices=4,
-            callbacks=[CustomWriter(original_path, "original.hdf5")],
+            devices=6,
+            callbacks=[prediction_writer],
         )
         trainer.predict(
             video_frame_extractor, av1m_datamodule, return_predictions=False
         )
     if True:
         reconstruct_datamodule = ReconstructDataModule(
-            file_path=original_path,
-            output_hdf5="original.hdf5",
+            input_file=zarr_file,
             batch_size=6,
-            num_workers=16,
+            num_workers=6,
         )
         model = VectorQuantizedVAEWrapper(ckpt=args.ckpt, batch_size=64)
-        trainer = L.Trainer(
-            callbacks=[CustomWriter(reconstruct_path, "reconstruct.hdf5")]
-        )
+        trainer = L.Trainer(callbacks=[prediction_writer])
         trainer.predict(model, reconstruct_datamodule, return_predictions=False)
