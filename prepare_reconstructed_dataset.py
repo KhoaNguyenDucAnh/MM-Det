@@ -7,33 +7,28 @@ import lightning as L
 import numpy as np
 import torch
 import torch.utils.data as data
-import zarr
 from einops import rearrange
-from lightning.pytorch.callbacks import BasePredictionWriter
 from torch.nn import functional as F
 from torchvision import transforms
 
 from models import VectorQuantizedVAE
+from utils.utils import CustomWriter
+from dataset import ZarrDataset
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-d", "--data-root", type=str, default="data", help="data root for videos"
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
+        "--output-dir",
         type=str,
-        default="outputs/",
+        default="outputs",
         help="output path",
     )
     parser.add_argument(
-        "--ext",
+        "--output-fn",
         type=str,
-        nargs="+",
-        default=["mp4", "avi", "mpeg", "wmv", "mov", "flv"],
-        help="target extensions",
+        default="output.zarr",
+        help="output file name",
     )
     parser.add_argument(
         "--ckpt",
@@ -41,48 +36,8 @@ def parse_args():
         default="weights/vqvae/model.pt",
         help="checkpoint path for vqvae",
     )
-    parser.add_argument(
-        "--device", type=str, default="cuda", help="device for reconstruction model"
-    )
     return parser.parse_args()
 
-
-class AV1MDataModule(L.LightningDataModule):
-
-    def __init__(self, metadata_file, data_root, batch_size, num_workers):
-        super().__init__()
-        self.metadata_file = metadata_file
-        self.data_root = data_root
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-
-    def setup(self, stage):
-        with open(self.metadata_file, "r") as file:
-            self.metadata = json.load(file)
-        self.metadata = [
-            os.path.join(self.data_root, video_info["file"])
-            for video_info in self.metadata
-            if os.path.exists(os.path.join(self.data_root, video_info["file"]))
-        ]
-
-    def predict_dataloader(self):
-        return data.DataLoader(
-            self.metadata, batch_size=self.batch_size, num_workers=self.num_workers
-        )
-
-
-class ZarrLazyDataset(data.Dataset):
-    def __init__(self, zarr_group):
-        self.zarr_group = zarr_group
-        self.keys = list(zarr_group.array_keys())
-
-    def __len__(self):
-        return len(self.keys)
-
-    def __getitem__(self, idx):
-        key = self.keys[idx]
-        array = self.zarr_group[key]
-        return key, array[:]
 
 
 class ReconstructDataModule(L.LightningDataModule):
@@ -93,13 +48,8 @@ class ReconstructDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-    # def prepare_data(self):
-    #     file = zarr.open_group(self.input_file, mode="r")
-    #     self.dataset = list(file["original"].arrays())
-
     def setup(self, stage=None):
-        zarr_file = zarr.open_group(self.input_file, mode="r")
-        self.dataset = ZarrLazyDataset(zarr_file["original"])
+        self.dataset = ZarrDataset(self.input_file, "original")
 
     def predict_dataloader(self):
         return data.DataLoader(
@@ -108,60 +58,6 @@ class ReconstructDataModule(L.LightningDataModule):
             num_workers=self.num_workers,
             collate_fn=lambda batch: batch,
         )
-
-
-class CustomWriter(BasePredictionWriter):
-    def __init__(self, output_file):
-        super().__init__("batch")
-        self.output_file = output_file
-
-    def write_on_batch_end(
-        self,
-        trainer,
-        pl_module,
-        prediction,
-        batch_indices,
-        batch,
-        batch_idx,
-        dataloader_idx,
-    ):
-        if prediction == None:
-            return
-        file = zarr.open_group(self.output_file, mode="a")
-        for key, value in prediction.items():
-            array = file.create_array(
-                name=key,
-                shape=value.shape,
-                dtype=value.dtype,
-                overwrite=True,
-            )
-            array[...] = value
-
-
-class VideoFrameExtractor(L.LightningModule):
-    def __init__(self):
-        super().__init__()
-
-    def predict_step(self, batch):
-        extracted_batch = {}
-        for video_path in batch:
-            vc = cv2.VideoCapture(video_path)
-
-            if not vc.isOpened():
-                continue
-
-            extracted_frames = []
-            while True:
-                ret, frame = vc.read()
-                if not ret:
-                    break
-                extracted_frames.append(frame)
-            vc.release()
-
-            extracted_batch[os.path.join("original", video_path.replace("/", "_"))] = (
-                np.array(extracted_frames)
-            )
-        return extracted_batch
 
 
 class VectorQuantizedVAEWrapper(L.LightningModule):
@@ -180,6 +76,9 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
 
         self.batch_size = batch_size
 
+    def forward(self, X):
+        return self.model(X)
+
     def denormalize_batch_t(self, img_t, mean, std):
         try:
             assert len(mean) == len(std)
@@ -193,8 +92,26 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
             img_denorm[:, t, :, :] = (img_t[:, t, :, :].clone() * std[t]) + mean[t]
         return img_denorm
 
-    def forward(self, X):
-        return self.model(X)
+    def postprocess_reconstructed_frames(
+        self, frames_batch, reconstructed_frames_batch
+    ):
+        if reconstructed_frames_batch.shape != frames_batch.shape:
+            reconstructed_frames_batch = F.interpolate(
+                reconstructed_frames_batch,
+                (frames_batch.shape[-2], frames_batch.shape[-1]),
+                mode="nearest",
+            )
+        reconstructed_frames_batch = self.denormalize_batch_t(
+            reconstructed_frames_batch,
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5],
+        )
+        reconstructed_frames_batch = rearrange(
+            reconstructed_frames_batch.cpu().numpy(),
+            "b c h w -> b h w c",
+        )
+        reconstructed_frames_batch = np.uint8(reconstructed_frames_batch * 255.0)
+        return reconstructed_frames_batch
 
     def predict_step(self, batch):
         reconstructed_batch = {}
@@ -208,26 +125,12 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
                     ]
                 )
                 frames_batch = frames_batch.to(next(self.model.parameters()).device)
-                reconstructed_frames_batch, _, _ = model(frames_batch)
+                reconstructed_frames_batch, _, _ = self.forward(frames_batch)
 
-                if reconstructed_frames_batch.shape != frames_batch.shape:
-                    reconstructed_frames_batch = F.interpolate(
-                        reconstructed_frames_batch,
-                        (frames_batch.shape[-2], frames_batch.shape[-1]),
-                        mode="nearest",
-                    )
-                reconstructed_frames_batch = self.denormalize_batch_t(
-                    reconstructed_frames_batch,
-                    mean=[0.5, 0.5, 0.5],
-                    std=[0.5, 0.5, 0.5],
+                reconstructed_frames_batch = self.postprocess_reconstructed_frames(
+                    frames_batch, reconstructed_frames_batch
                 )
-                reconstructed_frames_batch = rearrange(
-                    reconstructed_frames_batch.cpu().numpy(),
-                    "b c h w -> b h w c",
-                )
-                reconstructed_frames_batch = np.uint8(
-                    reconstructed_frames_batch * 255.0
-                )
+
                 reconstructed_frames[i : i + self.batch_size] = (
                     reconstructed_frames_batch
                 )
@@ -240,32 +143,15 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
 if __name__ == "__main__":
     args = parse_args()
 
-    os.makedirs(args.output, exist_ok=True)
-    zarr_file = os.path.join(args.output, "output.zarr")
+    os.makedirs(args.output_dir, exist_ok=True)
+    zarr_file = os.path.join(args.output_dir, args.output_fn)
     prediction_writer = CustomWriter(output_file=zarr_file)
 
-    if False:
-        av1m_datamodule = AV1MDataModule(
-            metadata_file="data/train_metadata.json",
-            data_root="data/train/train",
-            batch_size=6,
-            num_workers=6,
-        )
-        video_frame_extractor = VideoFrameExtractor()
-        trainer = L.Trainer(
-            accelerator="cpu",
-            devices=6,
-            callbacks=[prediction_writer],
-        )
-        trainer.predict(
-            video_frame_extractor, av1m_datamodule, return_predictions=False
-        )
-    if True:
-        reconstruct_datamodule = ReconstructDataModule(
-            input_file=zarr_file,
-            batch_size=6,
-            num_workers=6,
-        )
-        model = VectorQuantizedVAEWrapper(ckpt=args.ckpt, batch_size=64)
-        trainer = L.Trainer(callbacks=[prediction_writer])
-        trainer.predict(model, reconstruct_datamodule, return_predictions=False)
+    reconstruct_datamodule = ReconstructDataModule(
+        input_file=zarr_file,
+        batch_size=6,
+        num_workers=6,
+    )
+    model = VectorQuantizedVAEWrapper(ckpt=args.ckpt, batch_size=64)
+    trainer = L.Trainer(callbacks=[prediction_writer])
+    trainer.predict(model, reconstruct_datamodule, return_predictions=False)
