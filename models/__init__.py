@@ -1,4 +1,5 @@
+from .MMDet import MMDet
+from .MMEncoder import MMEncoder, MMEncoder2
 from .vqvae.modules import VectorQuantizedVAE
-from .MMDet import MMEncoder, MMDet
 
-__all__ = ['VectorQuantizedVAE', 'MMEncoder', 'MMDet']
+__all__ = ["VectorQuantizedVAE", "MMEncoder", "MMEncoder2", "MMDet"]
