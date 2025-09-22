@@ -39,7 +39,7 @@ class AV1MDataModule(L.LightningDataModule):
             video_path = os.path.join(self.data_root, video_info["file"])
             if os.path.exists(video_path):
                 vc = cv2.VideoCapture(video_path)
-                label = [0 for _ in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))]
+                label = [0 for _ in range(int(vc.get(cv2.CAP_PROP_FRAME_COUNT)))]
                 for fake_segment in video_info["fake_segments"]:
                     for index in range(
                         int(fake_segment[0] * 25), int(fake_segment[1] * 25) + 1
@@ -77,9 +77,9 @@ class GenVidBenchDataModule(L.LightningDataModule):
                 vc = cv2.VideoCapture(video_path)
 
                 if video_info[1] == "0":
-                    label = [0 for _ in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))]
+                    label = [0 for _ in range(int(vc.get(cv2.CAP_PROP_FRAME_COUNT)))]
                 else:
-                    label = [1 for _ in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))]
+                    label = [1 for _ in range(int(vc.get(cv2.CAP_PROP_FRAME_COUNT)))]
 
                 self.metadata.append([video_path, label])
 
