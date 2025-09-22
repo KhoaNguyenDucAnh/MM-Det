@@ -9,6 +9,7 @@ import zarr
 from lightning.pytorch.callbacks import BasePredictionWriter
 from torch.utils.data import DataLoader
 
+from dataset.video_dataset import *
 from utils.utils import CustomWriter
 
 
@@ -73,6 +74,12 @@ if __name__ == "__main__":
     #     batch_size=6,
     #     num_workers=6,
     # )
+
+    genvidbench_datamodule = GenVidBenchDataModule(
+        data_root="/scratch/gilbreth/nguy1053/GenVidBench",
+        batch_size=6,
+        num_workers=6,
+    )
 
     video_frame_extractor = VideoFrameExtractor()
 

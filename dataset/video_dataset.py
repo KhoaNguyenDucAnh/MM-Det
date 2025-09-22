@@ -69,17 +69,17 @@ class GenVidBenchDataModule(L.LightningDataModule):
             self.metadata += [line.strip().rsplit(" ", 1) for line in file]
         with open(os.path.join(self.data_root, "Pair2_labels.txt"), "r") as file:
             self.metadata += [line.strip().rsplit(" ", 1) for line in file]
-        
+
         for video_info in self.metadata:
             video_path = os.path.join(self.data_root, video_info[0])
             if os.path.exists(video_path):
                 vc = cv2.VideoCapture(video_path)
-                
+
                 if video_info[1] == "0":
                     label = [0 for _ in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))]
                 else:
                     label = [1 for _ in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))]
-                
+
                 self.metadata.append([video_path, label])
 
     def predict_dataloader(self):
