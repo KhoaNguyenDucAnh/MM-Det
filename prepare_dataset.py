@@ -89,4 +89,4 @@ if __name__ == "__main__":
         callbacks=[prediction_writer],
     )
 
-    trainer.predict(video_frame_extractor, av1m_datamodule, return_predictions=False)
+    trainer.predict(video_frame_extractor, genvidbench_datamodule, return_predictions=False)
