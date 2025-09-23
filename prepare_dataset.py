@@ -16,6 +16,12 @@ from utils.utils import CustomWriter
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "-d",
+        "--data-root",
+        type=str,
+        help="data root",
+    )
+    parser.add_argument(
         "-o",
         "--output",
         type=str,
@@ -69,14 +75,14 @@ if __name__ == "__main__":
     prediction_writer = CustomWriter(output_file=zarr_file)
 
     # av1m_datamodule = AV1MDataModule(
-    #     metadata_file="data/train_metadata.json",
-    #     data_root="data/train/train",
+    #     metadata_file="train_metadata.json",
+    #     data_root=args.data_root,
     #     batch_size=6,
     #     num_workers=6,
     # )
 
     genvidbench_datamodule = GenVidBenchDataModule(
-        data_root="/scratch/gilbreth/nguy1053/GenVidBench",
+        data_root=args.data_root,
         batch_size=6,
         num_workers=6,
     )
@@ -89,4 +95,6 @@ if __name__ == "__main__":
         callbacks=[prediction_writer],
     )
 
-    trainer.predict(video_frame_extractor, genvidbench_datamodule, return_predictions=False)
+    trainer.predict(
+        video_frame_extractor, genvidbench_datamodule, return_predictions=False
+    )

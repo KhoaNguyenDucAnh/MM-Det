@@ -1,3 +1,4 @@
+import json
 import os
 import random
 
@@ -31,21 +32,41 @@ class AV1MDataModule(L.LightningDataModule):
         self.num_workers = num_workers
 
     def setup(self, stage):
-        with open(self.metadata_file, "r") as file:
-            self.metadata = json.load(file)
+        cache_file = os.path.join(self.data_root, "metadata_cache.json")
+
+        if os.path.exists(cache_file):
+            with open(cache_file, "r") as file:
+                self.metadata = json.load(file)
+            return
+
+        with open(os.path.join(self.data_root, self.metadata_file), "r") as file:
+            temp_metadata = json.load(file)
 
         self.metadata = []
-        for video_info in self.metadata:
+        for video_info in temp_metadata:
             video_path = os.path.join(self.data_root, video_info["file"])
-            if os.path.exists(video_path):
-                vc = cv2.VideoCapture(video_path)
-                label = [0 for _ in range(int(vc.get(cv2.CAP_PROP_FRAME_COUNT)))]
-                for fake_segment in video_info["fake_segments"]:
-                    for index in range(
-                        int(fake_segment[0] * 25), int(fake_segment[1] * 25) + 1
-                    ):
-                        label[index] = 1
-                self.metadata.append([video_path, label])
+            if not os.path.exists(video_path):
+                continue
+
+            vc = cv2.VideoCapture(video_path)
+            frame_count = int(vc.get(cv2.CAP_PROP_FRAME_COUNT))
+            vc.release()
+
+            if frame_count <= 0:
+                continue
+
+            label = [0] * frame_count
+
+            for fake_segment in video_info["fake_segments"]:
+                start = int(fake_segment[0] * 25)
+                end = min(int(fake_segment[1] * 25) + 1, frame_count)
+                for index in range(start, end):
+                    label[index] = 1
+
+            self.metadata.append([video_path, label])
+
+        with open(cache_file, "w") as file:
+            json.dump(self.metadata, file)
 
     def predict_dataloader(self):
         return DataLoader(
@@ -65,23 +86,41 @@ class GenVidBenchDataModule(L.LightningDataModule):
         self.num_workers = num_workers
 
     def setup(self, stage):
-        self.metadata = []
+        cache_file = os.path.join(self.data_root, "metadata_cache.json")
+
+        if os.path.exists(cache_file):
+            with open(cache_file, "r") as file:
+                self.metadata = json.load(file)
+            return
+
+        temp_metadata = []
         with open(os.path.join(self.data_root, "Pair1_labels.txt"), "r") as file:
-            self.metadata += [line.strip().rsplit(" ", 1) for line in file]
+            temp_metadata += [line.strip().rsplit(" ", 1) for line in file]
         with open(os.path.join(self.data_root, "Pair2_labels.txt"), "r") as file:
-            self.metadata += [line.strip().rsplit(" ", 1) for line in file]
+            temp_metadata += [line.strip().rsplit(" ", 1) for line in file]
 
-        for video_info in self.metadata:
+        self.metadata = []
+        for video_info in temp_metadata:
             video_path = os.path.join(self.data_root, video_info[0])
-            if os.path.exists(video_path):
-                vc = cv2.VideoCapture(video_path)
+            if not os.path.exists(video_path):
+                continue
 
-                if video_info[1] == "0":
-                    label = [0 for _ in range(int(vc.get(cv2.CAP_PROP_FRAME_COUNT)))]
-                else:
-                    label = [1 for _ in range(int(vc.get(cv2.CAP_PROP_FRAME_COUNT)))]
+            vc = cv2.VideoCapture(video_path)
+            frame_count = int(vc.get(cv2.CAP_PROP_FRAME_COUNT))
+            vc.release()
 
-                self.metadata.append([video_path, label])
+            if frame_count <= 0:
+                continue
+
+            if video_info[1] == "0":
+                label = [0] * frame_count
+            else:
+                label = [1] * frame_count
+
+            self.metadata.append([video_path, label])
+
+        with open(cache_file, "w") as file:
+            json.dump(self.metadata, file)
 
     def predict_dataloader(self):
         return DataLoader(
