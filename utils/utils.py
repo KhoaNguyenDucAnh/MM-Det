@@ -7,8 +7,8 @@ from copy import deepcopy
 
 import numpy as np
 import torch
-from lightning.pytorch.callbacks import BasePredictionWriter
 import zarr
+from lightning.pytorch.callbacks import BasePredictionWriter
 
 
 def set_random_seed(seed):
@@ -157,10 +157,10 @@ class CustomWriter(BasePredictionWriter):
             return
         file = zarr.open_group(self.output_file, mode="a")
         for key, value in prediction.items():
-            array = file.create_array(
+            array = file.array(
                 name=key,
+                data=value,
                 shape=value.shape,
                 dtype=value.dtype,
                 overwrite=True,
             )
-            array[...] = value
