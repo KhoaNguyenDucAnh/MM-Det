@@ -22,14 +22,29 @@ from .utils import get_default_transformation_cfg
 """
 
 
+def filter_already_processed(zarr_file_path, metadata):
+    if os.path.exists(zarr_file_path):
+        zarr_file = zarr.open_group(zarr_file_path, mode="r")
+        already_processed_list = list(zarr_file["original"])
+        metadata = [
+            video_info
+            for video_info in metadata
+            if video_info[0].replace("/", "_") not in already_processed_list
+        ]
+    return metadata
+
+
 class AV1MDataModule(L.LightningDataModule):
 
-    def __init__(self, metadata_file, data_root, batch_size, num_workers):
+    def __init__(
+        self, metadata_file, data_root, batch_size, num_workers, zarr_file_path
+    ):
         super().__init__()
         self.metadata_file = metadata_file
         self.data_root = data_root
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.zarr_file_path = zarr_file_path
 
     def setup(self, stage):
         cache_file = os.path.join(self.data_root, "metadata_cache.json")
@@ -37,6 +52,7 @@ class AV1MDataModule(L.LightningDataModule):
         if os.path.exists(cache_file):
             with open(cache_file, "r") as file:
                 self.metadata = json.load(file)
+            self.metadata = filter_already_processed(self.zarr_file_path, self.metadata)
             return
 
         with open(os.path.join(self.data_root, self.metadata_file), "r") as file:
@@ -68,6 +84,8 @@ class AV1MDataModule(L.LightningDataModule):
         with open(cache_file, "w") as file:
             json.dump(self.metadata, file)
 
+        self.metadata = filter_already_processed(self.zarr_file_path, self.metadata)
+
     def predict_dataloader(self):
         return DataLoader(
             self.metadata,
@@ -79,11 +97,12 @@ class AV1MDataModule(L.LightningDataModule):
 
 class GenVidBenchDataModule(L.LightningDataModule):
 
-    def __init__(self, data_root, batch_size, num_workers):
+    def __init__(self, data_root, batch_size, num_workers, zarr_file_path):
         super().__init__()
         self.data_root = data_root
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.zarr_file_path = zarr_file_path
 
     def setup(self, stage):
         cache_file = os.path.join(self.data_root, "metadata_cache.json")
@@ -91,6 +110,7 @@ class GenVidBenchDataModule(L.LightningDataModule):
         if os.path.exists(cache_file):
             with open(cache_file, "r") as file:
                 self.metadata = json.load(file)
+            self.metadata = filter_already_processed(self.zarr_file_path, self.metadata)
             return
 
         temp_metadata = []
@@ -121,6 +141,8 @@ class GenVidBenchDataModule(L.LightningDataModule):
 
         with open(cache_file, "w") as file:
             json.dump(self.metadata, file)
+
+        self.metadata = filter_already_processed(self.zarr_file_path, self.metadata)
 
     def predict_dataloader(self):
         return DataLoader(
