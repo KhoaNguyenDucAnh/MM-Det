@@ -71,20 +71,22 @@ if __name__ == "__main__":
     args = parse_args()
 
     os.makedirs(args.output, exist_ok=True)
-    zarr_file = os.path.join(args.output, args.file_name)
-    prediction_writer = CustomWriter(output_file=zarr_file)
+    zarr_file_path = os.path.join(args.output, args.file_name)
+    prediction_writer = CustomWriter(output_file=zarr_file_path)
 
     # av1m_datamodule = AV1MDataModule(
     #     metadata_file="train_metadata.json",
     #     data_root=args.data_root,
     #     batch_size=6,
     #     num_workers=6,
+    #     zarr_file_path=zarr_file_path,
     # )
 
     genvidbench_datamodule = GenVidBenchDataModule(
         data_root=args.data_root,
         batch_size=6,
         num_workers=6,
+        zarr_file_path=zarr_file_path,
     )
 
     video_frame_extractor = VideoFrameExtractor()
