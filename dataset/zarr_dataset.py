@@ -10,7 +10,7 @@ class ZarrDataset(Dataset):
         self.videos = list(self.zarr_group.array_keys())
 
     def __len__(self):
-        return len(self.keys)
+        return len(self.videos)
 
     def __getitem__(self, index):
         video = self.videos[index]
