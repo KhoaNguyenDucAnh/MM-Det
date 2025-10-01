@@ -25,11 +25,11 @@ from .utils import get_default_transformation_cfg
 def filter_already_processed(zarr_file_path, metadata):
     if os.path.exists(zarr_file_path):
         zarr_file = zarr.open_group(zarr_file_path, mode="r")
-        already_processed_list = list(zarr_file["original"])
+        already_processed_list = list(zarr_file["id"])
         metadata = [
             video_info
             for video_info in metadata
-            if video_info[0].replace("/", "_") not in already_processed_list
+            if video_info[0] not in already_processed_list
         ]
     return metadata
 
@@ -59,7 +59,7 @@ class AV1MDataModule(L.LightningDataModule):
             temp_metadata = json.load(file)
 
         self.metadata = []
-        for video_info in temp_metadata:
+        for video_id, video_info in enumerate(temp_metadata):
             video_path = os.path.join(self.data_root, video_info["file"])
             if not os.path.exists(video_path):
                 continue
@@ -79,7 +79,7 @@ class AV1MDataModule(L.LightningDataModule):
                 for index in range(start, end):
                     label[index] = 1
 
-            self.metadata.append([video_path, label])
+            self.metadata.append([video_id, video_path, label])
 
         with open(cache_file, "w") as file:
             json.dump(self.metadata, file)
@@ -120,7 +120,7 @@ class GenVidBenchDataModule(L.LightningDataModule):
             temp_metadata += [line.strip().rsplit(" ", 1) for line in file]
 
         self.metadata = []
-        for video_info in temp_metadata:
+        for video_id, video_info in enumerate(temp_metadata):
             video_path = os.path.join(self.data_root, video_info[0])
             if not os.path.exists(video_path):
                 continue
@@ -137,7 +137,7 @@ class GenVidBenchDataModule(L.LightningDataModule):
             else:
                 label = [1] * frame_count
 
-            self.metadata.append([video_path, label])
+            self.metadata.append([str(video_id), video_path, label])
 
         with open(cache_file, "w") as file:
             json.dump(self.metadata, file)

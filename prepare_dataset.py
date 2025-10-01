@@ -44,7 +44,7 @@ class VideoFrameExtractor(L.LightningModule):
 
     def predict_step(self, batch):
         extracted_batch = {}
-        for video_path, label in batch:
+        for video_id, video_path, label in batch:
             vc = cv2.VideoCapture(video_path)
 
             if not vc.isOpened():
@@ -60,10 +60,11 @@ class VideoFrameExtractor(L.LightningModule):
 
             label = np.asarray(label)
 
-            extracted_batch[os.path.join("original", video_path.replace("/", "_"))] = (
+            extracted_batch[os.path.join("id", video_id)] = np.array([video_path])
+            extracted_batch[os.path.join("original", video_id)] = (
                 np.array(extracted_frames)
             )
-            extracted_batch[os.path.join("label", video_path.replace("/", "_"))] = label
+            extracted_batch[os.path.join("label", video_id)] = label
         return extracted_batch
 
 
@@ -84,8 +85,8 @@ if __name__ == "__main__":
 
     genvidbench_datamodule = GenVidBenchDataModule(
         data_root=args.data_root,
-        batch_size=6,
-        num_workers=6,
+        batch_size=4,
+        num_workers=16,
         zarr_file_path=zarr_file_path,
     )
 
@@ -93,7 +94,7 @@ if __name__ == "__main__":
 
     trainer = L.Trainer(
         accelerator="cpu",
-        devices=6,
+        devices=8,
         callbacks=[prediction_writer],
     )
 
