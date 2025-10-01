@@ -19,3 +19,5 @@ einops==0.6.1
 einops-exts==0.0.4
 tensorboardX==2.6.2.2
 timm==0.9.16
+lightning
+zarr
