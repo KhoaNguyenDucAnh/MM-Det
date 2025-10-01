@@ -157,7 +157,7 @@ class CustomWriter(BasePredictionWriter):
             return
         file = zarr.open_group(self.output_file, mode="a")
         for key, value in prediction.items():
-            array = file.array(
+            file.array(
                 name=key,
                 data=value,
                 shape=value.shape,
