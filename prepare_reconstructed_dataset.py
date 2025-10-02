@@ -117,7 +117,7 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
 
     def predict_step(self, batch):
         reconstructed_batch = {}
-        for video_path, extracted_frames in batch:
+        for video_id, extracted_frames in batch:
             reconstructed_frames = np.empty_like(extracted_frames, dtype=np.uint8)
             for i in range(0, extracted_frames.shape[0], self.batch_size):
                 frames_batch = torch.stack(
@@ -136,7 +136,7 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
                 reconstructed_frames[i : i + self.batch_size] = (
                     reconstructed_frames_batch
                 )
-            reconstructed_batch[os.path.join("reconstruct", video_path)] = (
+            reconstructed_batch[os.path.join("reconstruct", video_id)] = (
                 reconstructed_frames
             )
         return reconstructed_batch
