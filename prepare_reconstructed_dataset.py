@@ -51,7 +51,7 @@ class ReconstructDataModule(L.LightningDataModule):
         self.num_workers = num_workers
 
     def setup(self, stage=None):
-        self.dataset = ZarrDataset(self.input_file, "original")
+        self.dataset = ZarrDataset(self.input_file, "original", "reconstruct")
 
     def predict_dataloader(self):
         return data.DataLoader(
