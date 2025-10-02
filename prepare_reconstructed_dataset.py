@@ -19,13 +19,15 @@ from dataset import ZarrDataset
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--output-dir",
+        "-o",
+        "--output",
         type=str,
-        default="outputs",
+        default="outputs/",
         help="output path",
     )
     parser.add_argument(
-        "--output-fn",
+        "-fn",
+        "--file-name",
         type=str,
         default="output.zarr",
         help="output file name",
@@ -143,12 +145,12 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
 if __name__ == "__main__":
     args = parse_args()
 
-    os.makedirs(args.output_dir, exist_ok=True)
-    zarr_file = os.path.join(args.output_dir, args.output_fn)
-    prediction_writer = CustomWriter(output_file=zarr_file)
+    os.makedirs(args.output, exist_ok=True)
+    zarr_file_path = os.path.join(args.output, args.file_name)
+    prediction_writer = CustomWriter(output_file=zarr_file_path)
 
     reconstruct_datamodule = ReconstructDataModule(
-        input_file=zarr_file,
+        input_file=zarr_file_path,
         batch_size=6,
         num_workers=6,
     )
