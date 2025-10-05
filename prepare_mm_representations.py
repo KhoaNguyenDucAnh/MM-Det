@@ -54,8 +54,8 @@ if __name__ == "__main__":
     opt = BaseOption()
     args = parse_args(opt)
 
-    os.makedirs(args.output_dir, exist_ok=True)
-    zarr_file = os.path.join(args.output_dir, args.output_fn)
+    os.makedirs(args.output, exist_ok=True)
+    zarr_file = os.path.join(args.output, args.file_name)
     prediction_writer = CustomWriter(output_file=zarr_file)
 
     mm_representation_datamodule = MMRepresentationDataModule(
