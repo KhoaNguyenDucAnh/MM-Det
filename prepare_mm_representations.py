@@ -14,13 +14,15 @@ from utils.utils import CustomWriter
 def parse_args(opt):
     parser = opt.parser
     parser.add_argument(
-        "--output-dir",
+        "-o",
+        "--output",
         type=str,
-        default="outputs",
+        default="outputs/",
         help="output path",
     )
     parser.add_argument(
-        "--output-fn",
+        "-fn",
+        "--file-name",
         type=str,
         default="output.zarr",
         help="output file name",
