@@ -5,13 +5,6 @@ class BaseOption:
     def __init__(self):
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument(
-            "-d",
-            "--data-root",
-            type=str,
-            default="./data/DVF_recons",
-            help="the dataset root",
-        )
-        self.parser.add_argument(
             "--ckpt",
             type=str,
             default="./output/weights/model.pth",
@@ -48,12 +41,6 @@ class BaseOption:
             "--window-size", type=int, default=10, help="window size for video clips"
         )
         self.parser.add_argument(
-            "--conv-mode",
-            type=str,
-            default="llava_v1",
-            help="the conversation mode of lmm",
-        )
-        self.parser.add_argument(
             "--new-tokens",
             type=int,
             default=64,
@@ -84,12 +71,6 @@ class BaseOption:
             "--cache-mm",
             action="store_true",
             help="whether load mm encoder or use cached representations",
-        )
-        self.parser.add_argument(
-            "--mm-root",
-            type=str,
-            default="./data/DVF_mm_representations",
-            help="the path of cached mm representations",
         )
         self.parser.add_argument("--debug", action="store_true", help="debug mode")
 
