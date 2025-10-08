@@ -49,7 +49,6 @@ class MMEncoder(MMEncoderBase):
             model_name=get_model_name_from_path(config["lmm_ckpt"]),
         )
         self.tokenizer.chat_template = """{% for message in messages %}{% if message['role'] != 'system' %}{{ message['role'].upper() + ': '}}{% endif %}{# Render all images first #}{% for content in message['content'] | selectattr('type', 'equalto', 'image') %}{{ '<image>\n' }}{% endfor %}{# Render all text next #}{% for content in message['content'] | selectattr('type', 'equalto', 'text') %}{{ content['text'] + ' '}}{% endfor %}{% endfor %}{% if add_generation_prompt %}{{ 'ASSISTANT:' }}{% endif %}"""
-        self.vision_tower = self.model.model.vision_tower.vision_tower
 
     def get_prompt(self, image):
         return [
@@ -71,20 +70,20 @@ class MMEncoder(MMEncoderBase):
 
     def forward(self, X):
         image = X
-        device = self.model.device
+        self.model = self.model.to(self.device)
 
         input_ids = self.tokenizer.apply_chat_template(
             self.get_prompt(image),
             add_generation_prompt=True,
             tokenize=True,
             return_tensors="pt",
-        ).to(device)
+        ).to(self.device)
 
         processed_image = self.image_processor(images=image, return_tensors="pt").to(
-            device
+            self.device
         )["pixel_values"]
         processed_image = processed_image.half()
-        visual_features = self.vision_tower(processed_image).pooler_output
+        visual_features = self.model.model.vision_tower.vision_tower(processed_image).pooler_output
 
         output = self.model.generate(
             input_ids,
