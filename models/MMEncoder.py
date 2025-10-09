@@ -22,6 +22,8 @@ class MMEncoder(L.LightningModule):
             load_8bit=config["load_8bit"],
             load_4bit=config["load_4bit"],
             model_name=get_model_name_from_path(config["lmm_ckpt"]),
+            # map_location="cpu",  # <- important if your loader supports this arg
+            device_map=None,  # <- avoid automatic device_map
         )
         self.tokenizer.chat_template = """{% for message in messages %}{% if message['role'] != 'system' %}{{ message['role'].upper() + ': '}}{% endif %}{# Render all images first #}{% for content in message['content'] | selectattr('type', 'equalto', 'image') %}{{ '<image>\n' }}{% endfor %}{# Render all text next #}{% for content in message['content'] | selectattr('type', 'equalto', 'text') %}{{ content['text'] + ' '}}{% endfor %}{% endfor %}{% if add_generation_prompt %}{{ 'ASSISTANT:' }}{% endif %}"""
 
@@ -62,13 +64,12 @@ class MMEncoder(L.LightningModule):
         return mm_representation
 
     def forward(self, image):
-        self.model = self.model.to(self.device)
-        if hasattr(self.model.model, "vision_tower"):
-            self.model.model.vision_tower.to(self.device)
-        if hasattr(self.model.model.vision_tower, "vision_tower"):
-            self.model.model.vision_tower.vision_tower.to(self.device)
+        # self.model = self.model.to(self.device)
+        # if hasattr(self.model.model, "vision_tower"):
+        #     self.model.model.vision_tower.to(self.device)
+        # if hasattr(self.model.model.vision_tower, "vision_tower"):
+        #     self.model.model.vision_tower.vision_tower.to(self.device)
 
-        
         input_ids = self.tokenizer.apply_chat_template(
             self.get_prompt(image),
             add_generation_prompt=True,
