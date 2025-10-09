@@ -11,9 +11,9 @@ from einops import rearrange
 from torch.nn import functional as F
 from torchvision import transforms
 
+from dataset import ZarrDataset
 from models import VectorQuantizedVAE
 from utils.utils import CustomWriter
-from dataset import ZarrDataset
 
 
 def parse_args():
@@ -41,7 +41,6 @@ def parse_args():
     return parser.parse_args()
 
 
-
 class ReconstructDataModule(L.LightningDataModule):
 
     def __init__(self, input_file, batch_size, num_workers):
@@ -51,7 +50,7 @@ class ReconstructDataModule(L.LightningDataModule):
         self.num_workers = num_workers
 
     def setup(self, stage=None):
-        self.dataset = ZarrDataset(self.input_file, "original", "reconstruct")
+        self.dataset = ZarrDataset(self.input_file, "original", ["reconstruct"])
 
     def predict_dataloader(self):
         return data.DataLoader(
