@@ -156,7 +156,7 @@ class GenVidBenchDataModule(L.LightningDataModule):
 class VideoDataset(Dataset):
     def __init__(
         self,
-        input_file,
+        cache_file_path,
         sample_size=10,
         sample_method="continuous",
         transform_cfg=get_default_transformation_cfg(),
@@ -165,7 +165,7 @@ class VideoDataset(Dataset):
     ):
         super().__init__()
 
-        zarr_file = zarr.open_group(input_file, mode="r")
+        zarr_file = zarr.open_group(cache_file_path, mode="r")
         self.original = zarr_file["original"]
         self.reconstruct = zarr_file["reconstruct"]
         self.visual = zarr_file["visual"]

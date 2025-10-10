@@ -9,37 +9,19 @@ from options.train_options import TrainOption
 from utils.utils import get_logger, set_random_seed
 
 
-def parse_args(opt):
-    parser = opt.parser
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=str,
-        default="outputs/",
-        help="output path",
-    )
-    parser.add_argument(
-        "-fn",
-        "--file-name",
-        type=str,
-        default="output.zarr",
-        help="output file name",
-    )
-    return parser.parse_args()
-
-
 if __name__ == "__main__":
     opt = TrainOption()
-    args = parse_args(opt)
+    args = opt.parse()
 
     config = args.__dict__
     logger = get_logger(__name__, config)
     logger.info(config)
     set_random_seed(config["seed"])
 
-    zarr_file = os.path.join(args.output, args.file_name)
+    os.makedirs(args.cache_dir, exist_ok=True)
+    cache_file_path = os.path.join(args.cache_dir, args.cache_file_name)
 
-    video_dataset = VideoDataset(input_file=zarr_file)
+    video_dataset = VideoDataset(cache_file_path=cache_file_path)
     video_datamodule = VideoDataModule(
         video_dataset, batch_size=args.batch_size, num_workers=args.num_workers
     )
@@ -48,7 +30,7 @@ if __name__ == "__main__":
 
     trainer = L.Trainer(
         default_root_dir=args.ckpt_dir,
-        strategy="ddp",
+        strategy="ddp_find_unused_parameters_true",
         callbacks=[
             EarlyStopping(
                 monitor="validation_loss", patience=5, verbose=False, mode="min"
