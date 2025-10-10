@@ -247,8 +247,9 @@ def get_video_transformation_from_cfg(pipeline_cfg):
         if crop_type == 'center':
             crop_func = torchvision.transforms.CenterCrop(crop_img_size)
         elif crop_type == 'random':
-            crop_pipeline = random_crop_pipeline(crop_img_size)
-            crop_func = torchvision.transforms.Lambda(lambda img: crop_pipeline(img))
+            # crop_pipeline = random_crop_pipeline(crop_img_size)
+            # crop_func = torchvision.transforms.Lambda(lambda img: crop_pipeline(img))
+            crop_func = torchvision.transforms.RandomCrop(crop_img_size)
         else:
             raise ValueError(f'Unexpected Crop Type: {crop_type}')
     
