@@ -4,12 +4,12 @@ import argparse
 class BaseOption:
     def __init__(self):
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument(
-            "--ckpt",
-            type=str,
-            default="./output/weights/model.pth",
-            help="the checkpoint path",
-        )
+        # self.parser.add_argument(
+        #     "--ckpt",
+        #     type=str,
+        #     default="./output/weights/model.pth",
+        #     help="the checkpoint path",
+        # )
         self.parser.add_argument(
             "--lmm-ckpt",
             type=str,

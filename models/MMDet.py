@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from einops import rearrange
 from torch import nn
+from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from .vit.stv_transformer_hybrid import vit_base_r50_s16_224_with_recons_iafa
 
@@ -65,9 +67,10 @@ class DynamicFusion(nn.Module):
         return out
 
 
-class MMDet(nn.Module):
+class MMDet(L.LightningModule):
     def __init__(self, config, **kwargs):
         super(MMDet, self).__init__()
+        self.config = config
         self.window_size = config["window_size"]
         self.st_pretrained = config["st_pretrained"]
         self.st_ckpt = config["st_ckpt"]
@@ -84,12 +87,6 @@ class MMDet(nn.Module):
             pretrained=config["st_pretrained"],
             ckpt_path=self.st_ckpt,
         )
-        self.load_mm_encoder = not config["cache_mm"]
-        if self.load_mm_encoder:
-            self.mm_encoder = MMEncoder(config)
-            for m in self.mm_encoder.modules():
-                m.required_grad = False
-            print("Freeze MM Encoder.")
         self.clip_proj = nn.Linear(1024, 768)
         self.mm_proj = nn.Linear(4096, 768)
         self.final_fusion = DynamicFusion(in_planes=768)
@@ -108,21 +105,82 @@ class MMDet(nn.Module):
                 elif isinstance(m, nn.Linear):
                     nn.init.normal_(m.weight, std=0.01)
 
-    def forward(self, x_input, cached_features={}):
-        x_original, x_recons = x_input
-        B = x_original.size(0)
-        x_st = self.backbone(x_input)  # spatial temporal feature
-        visual_feat = cached_features.get("visual", None)
-        textual_feat = cached_features.get("textual", None)
-        if not self.load_mm_encoder:
-            assert visual_feat is not None and textual_feat is not None
-        if visual_feat is None or textual_feat is None:
-            visual_feat, textual_feat = self.mm_encoder(x_original)
-        visual_feat, textual_feat = visual_feat.float(), textual_feat.float()
-        x_visual = self.clip_proj(visual_feat).unsqueeze(1)
-        x_mm = self.mm_proj(textual_feat)
+    def forward(
+        self, original_frames, reconstructed_frames, visual_feature, textual_feature
+    ):
+        x_st = self.backbone(
+            (original_frames, reconstructed_frames)
+        )  # spatial temporal feature
+        visual_feature, textual_feature = (
+            visual_feature.float(),
+            textual_feature.float(),
+        )
+        x_visual = self.clip_proj(visual_feature).unsqueeze(1)
+        x_mm = self.mm_proj(textual_feature)
         x_feat = torch.cat([x_st, x_visual, x_mm], dim=1)
         x_feat = self.final_fusion(x_feat)
         x_feat = torch.mean(x_feat, dim=1)
         out = self.head(x_feat)
         return out
+
+    def training_step(self, batch):
+        (
+            video,
+            original_frames,
+            reconstructed_frames,
+            visual_feature,
+            textual_feature,
+            label,
+        ) = batch
+        logits = self.forward(
+            original_frames, reconstructed_frames, visual_feature, textual_feature
+        )
+        loss = torch.nn.functional.cross_entropy(logits, label)
+        self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch):
+        (
+            video,
+            original_frames,
+            reconstructed_frames,
+            visual_feature,
+            textual_feature,
+            label,
+        ) = batch
+        logits = self.forward(
+            original_frames, reconstructed_frames, visual_feature, textual_feature
+        )
+        loss = torch.nn.functional.cross_entropy(logits, label)
+        self.log("validation_loss", loss)
+        return loss
+
+    def predict_step(self, batch):
+        (
+            video,
+            original_frames,
+            reconstructed_frames,
+            visual_feature,
+            textual_feature,
+        ) = batch
+        logits = self.forward(
+            original_frames, reconstructed_frames, visual_feature, textual_feature
+        )
+        return logits
+
+    def configure_optimizers(self):
+        optimizer = Adam(self.parameters(), lr=1e-3)
+        scheduler = ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=self.config["step_factor"],
+            min_lr=1e-08,
+            patience=self.config["patience"],
+            cooldown=self.config["cooldown"],
+        )
+        return [optimizer], [
+            {"scheduler": scheduler, "interval": "epoch", "monitor": "validation_loss"}
+        ]
+
+    def lr_scheduler_step(self, scheduler, metric):
+        scheduler.step(metric)

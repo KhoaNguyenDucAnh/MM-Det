@@ -28,7 +28,7 @@ class TrainOption(BaseOption):
             help="the split ratio for train and validation if split is not specified",
         )
         self.parser.add_argument(
-            "--bs", type=int, default=2, help="batch size for training"
+            "--batch-size", type=int, default=2, help="batch size for training"
         )
         self.parser.add_argument("--mode", type=str, default="train", help="mode")
         self.parser.add_argument("--epoch", type=int, default=50, help="epoch")
@@ -69,4 +69,7 @@ class TrainOption(BaseOption):
             type=float,
             default=1e-11,
             help="the minimum value for validation metric to finish training",
+        )
+        self.parser.add_argument(
+            "--ckpt-dir", type=str, default="ckpt_dir", help="checkpoint dirs"
         )
