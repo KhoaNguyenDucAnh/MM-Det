@@ -197,6 +197,8 @@ class VideoDataset(Dataset):
             if video_length != self.reconstruct[video].shape[0]:
                 # Number of frames does not match
                 continue
+            if video_length < 10:
+                continue
             self.videos.append((video, video_length))
 
     def __len__(self):
