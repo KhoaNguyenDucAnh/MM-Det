@@ -1,6 +1,7 @@
 import os
 
 import lightning as L
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
 from dataset import VideoDataModule, VideoDataset
 from models import MMDet
@@ -39,9 +40,19 @@ if __name__ == "__main__":
     zarr_file = os.path.join(args.output, args.file_name)
 
     video_dataset = VideoDataset(input_file=zarr_file)
-    video_datamodule = VideoDataModule(video_dataset, batch_size=args.batch_size, num_workers=args.num_workers)
+    video_datamodule = VideoDataModule(
+        video_dataset, batch_size=args.batch_size, num_workers=args.num_workers
+    )
 
     model = MMDet(config)
 
-    trainer = L.Trainer(default_root_dir=args.ckpt_dir)
+    trainer = L.Trainer(
+        default_root_dir=args.ckpt_dir,
+        strategy="ddp",
+        callbacks=[
+            EarlyStopping(
+                monitor="validation_loss", patience=5, verbose=False, mode="min"
+            )
+        ],
+    )
     trainer.fit(model, video_datamodule)

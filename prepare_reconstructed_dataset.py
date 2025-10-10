@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 
@@ -6,59 +5,14 @@ import cv2
 import lightning as L
 import numpy as np
 import torch
-import torch.utils.data as data
 from einops import rearrange
 from torch.nn import functional as F
 from torchvision import transforms
 
-from dataset import ZarrDataset
+from dataset import ReconstructDataModule
 from models import VectorQuantizedVAE
+from options.base_options import BaseOption
 from utils.utils import CustomWriter
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=str,
-        default="outputs/",
-        help="output path",
-    )
-    parser.add_argument(
-        "-fn",
-        "--file-name",
-        type=str,
-        default="output.zarr",
-        help="output file name",
-    )
-    parser.add_argument(
-        "--ckpt",
-        type=str,
-        default="weights/vqvae/model.pt",
-        help="checkpoint path for vqvae",
-    )
-    return parser.parse_args()
-
-
-class ReconstructDataModule(L.LightningDataModule):
-
-    def __init__(self, input_file, batch_size, num_workers):
-        super().__init__()
-        self.input_file = input_file
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-
-    def setup(self, stage=None):
-        self.dataset = ZarrDataset(self.input_file, "original", ["reconstruct"])
-
-    def predict_dataloader(self):
-        return data.DataLoader(
-            self.dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            collate_fn=lambda batch: batch,
-        )
 
 
 class VectorQuantizedVAEWrapper(L.LightningModule):
@@ -142,17 +96,20 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
 
 
 if __name__ == "__main__":
-    args = parse_args()
+    opt = BaseOption()
+    args = opt.parse()
 
-    os.makedirs(args.output, exist_ok=True)
-    zarr_file_path = os.path.join(args.output, args.file_name)
-    prediction_writer = CustomWriter(output_file=zarr_file_path)
+    os.makedirs(args.cache_dir, exist_ok=True)
+    cache_file_path = os.path.join(args.cache_dir, args.cache_file_name)
+    prediction_writer = CustomWriter(output_file=cache_file_path)
 
     reconstruct_datamodule = ReconstructDataModule(
-        input_file=zarr_file_path,
+        cache_file_path=cache_file_path,
         batch_size=6,
         num_workers=6,
     )
-    model = VectorQuantizedVAEWrapper(ckpt=args.ckpt, batch_size=64)
+
+    model = VectorQuantizedVAEWrapper(ckpt=args.vqvae_ckpt, batch_size=64)
+
     trainer = L.Trainer(callbacks=[prediction_writer])
     trainer.predict(model, reconstruct_datamodule, return_predictions=False)

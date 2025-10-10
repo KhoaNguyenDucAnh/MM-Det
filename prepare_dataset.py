@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 
@@ -10,32 +9,8 @@ from lightning.pytorch.callbacks import BasePredictionWriter
 from torch.utils.data import DataLoader
 
 from dataset.video_dataset import *
+from options.base_options import BaseOption
 from utils.utils import CustomWriter
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-d",
-        "--data-root",
-        type=str,
-        help="data root",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=str,
-        default="outputs/",
-        help="output path",
-    )
-    parser.add_argument(
-        "-fn",
-        "--file-name",
-        type=str,
-        default="output.zarr",
-        help="output file name",
-    )
-    return parser.parse_args()
 
 
 class VideoFrameExtractor(L.LightningModule):
@@ -58,36 +33,45 @@ class VideoFrameExtractor(L.LightningModule):
                 extracted_frames.append(frame)
             vc.release()
 
+            # video = VideoFileClip(video_path)
+            # audio = video.audio  # Get audio track
+            # audio_array = audio.to_soundarray(
+            #     fps=16000
+            # )  # Convert to NumPy array (16kHz)
+            # video.close()
+
             label = np.asarray(label)
 
             extracted_batch[os.path.join("id", video_id)] = np.array([video_path])
-            extracted_batch[os.path.join("original", video_id)] = (
-                np.array(extracted_frames)
+            extracted_batch[os.path.join("original", video_id)] = np.array(
+                extracted_frames
             )
+            # extracted_batch[os.path.join("audio", video_id)] = audio_array
             extracted_batch[os.path.join("label", video_id)] = label
         return extracted_batch
 
 
 if __name__ == "__main__":
-    args = parse_args()
+    opt = BaseOption()
+    args = opt.parse()
 
-    os.makedirs(args.output, exist_ok=True)
-    zarr_file_path = os.path.join(args.output, args.file_name)
-    prediction_writer = CustomWriter(output_file=zarr_file_path)
+    os.makedirs(args.cache_dir, exist_ok=True)
+    cache_file_path = os.path.join(args.cache_dir, args.cache_file_name)
+    prediction_writer = CustomWriter(output_file=cache_file_path)
 
     # av1m_datamodule = AV1MDataModule(
     #     metadata_file="train_metadata.json",
     #     data_root=args.data_root,
     #     batch_size=6,
     #     num_workers=6,
-    #     zarr_file_path=zarr_file_path,
+    #     cache_file_path=cache_file_path,
     # )
 
     genvidbench_datamodule = GenVidBenchDataModule(
         data_root=args.data_root,
         batch_size=4,
         num_workers=16,
-        zarr_file_path=zarr_file_path,
+        cache_file_path=cache_file_path,
     )
 
     video_frame_extractor = VideoFrameExtractor()

@@ -136,7 +136,7 @@ class MMDet(L.LightningModule):
             original_frames, reconstructed_frames, visual_feature, textual_feature
         )
         loss = torch.nn.functional.cross_entropy(logits, label)
-        self.log("train_loss", loss)
+        self.log("train_loss", loss, prog_bar=True)
         return loss
 
     def validation_step(self, batch):
@@ -152,7 +152,7 @@ class MMDet(L.LightningModule):
             original_frames, reconstructed_frames, visual_feature, textual_feature
         )
         loss = torch.nn.functional.cross_entropy(logits, label)
-        self.log("validation_loss", loss)
+        self.log("validation_loss", loss, prog_bar=True)
         return loss
 
     def predict_step(self, batch):

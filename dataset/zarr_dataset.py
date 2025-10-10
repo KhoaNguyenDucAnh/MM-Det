@@ -1,3 +1,5 @@
+import lightning as L
+import torch.utils.data as data
 import zarr
 from torch.utils.data import Dataset
 
@@ -23,3 +25,40 @@ class ZarrDataset(Dataset):
         video_id = self.video_id_list[index]
         array = self.data[video_id]
         return video_id, array[:]
+
+
+class ZarrDataModule(L.LightningDataModule):
+
+    def __init__(self, cache_file_path, batch_size, num_workers):
+        super().__init__()
+        self.cache_file_path = cache_file_path
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+    def predict_dataloader(self):
+        return data.DataLoader(
+            self.dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            collate_fn=lambda batch: batch,
+        )
+
+
+class ReconstructDataModule(ZarrDataModule):
+
+    def __init__(self, cache_file_path, batch_size, num_workers):
+        super().__init__(cache_file_path, batch_size, num_workers)
+
+    def setup(self, stage=None):
+        self.dataset = ZarrDataset(self.cache_file_path, "original", ["reconstruct"])
+
+
+class MMRepresentationDataModule(L.LightningDataModule):
+
+    def __init__(self, cache_file_path, batch_size, num_workers):
+        super().__init__(cache_file_path, batch_size, num_workers)
+
+    def setup(self, stage=None):
+        self.dataset = ZarrDataset(
+            self.cache_file_path, "original", ["textual", "visual"]
+        )

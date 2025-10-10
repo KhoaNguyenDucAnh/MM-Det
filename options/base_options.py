@@ -4,12 +4,32 @@ import argparse
 class BaseOption:
     def __init__(self):
         self.parser = argparse.ArgumentParser()
-        # self.parser.add_argument(
-        #     "--ckpt",
-        #     type=str,
-        #     default="./output/weights/model.pth",
-        #     help="the checkpoint path",
-        # )
+        self.parser.add_argument(
+            "-d",
+            "--data-root",
+            type=str,
+            help="data root",
+        )
+        self.parser.add_argument(
+            "-o",
+            "--cache-dir",
+            type=str,
+            default="cache/",
+            help="cache dir",
+        )
+        self.parser.add_argument(
+            "-fn",
+            "--cache-file-name",
+            type=str,
+            default="cache.zarr",
+            help="cache file name",
+        )
+        self.parser.add_argument(
+            "--vqvae-ckpt",
+            type=str,
+            default="weights/vqvae/model.pt",
+            help="checkpoint path for vqvae",
+        )
         self.parser.add_argument(
             "--lmm-ckpt",
             type=str,
