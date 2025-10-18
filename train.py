@@ -24,7 +24,7 @@ def main(args):
         batch_size=args["batch_size"],
         num_workers=args["num_workers"],
         mode="train",
-        split=[0.9, 0.1],
+        split=[0.8, 0.2],
     )
 
     model = MMDet(args)
