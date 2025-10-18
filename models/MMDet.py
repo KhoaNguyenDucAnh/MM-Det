@@ -140,7 +140,7 @@ class MMDet(L.LightningModule):
 
         probs = torch.softmax(logits, dim=1)
         pos_probs = probs[:, 1].detach().cpu().numpy()
-        y_true = labels.detach().cpu().numpy()
+        y_true = label.detach().cpu().numpy()
         auc = roc_auc_score(y_true, pos_probs)
 
         self.log_dict({"train_loss": loss, "train_auc": auc}, prog_bar=True)
@@ -163,7 +163,7 @@ class MMDet(L.LightningModule):
 
         probs = torch.softmax(logits, dim=1)
         pos_probs = probs[:, 1].detach().cpu().numpy()
-        y_true = labels.detach().cpu().numpy()
+        y_true = label.detach().cpu().numpy()
         auc = roc_auc_score(y_true, pos_probs)
 
         self.log_dict({"validation_loss": loss, "validation_auc": auc}, prog_bar=True)
