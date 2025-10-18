@@ -7,12 +7,12 @@ from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from dataset import VideoDataModule, VideoDataset
 from models import MMDet
 from options.train_options import TrainOption
-from utils.utils import get_logger, set_random_seed
+from utils.utils import set_random_seed
 
 
 def main(args):
-    logger = get_logger(__name__, args)
-    logger.info(args)
+    # logger = get_logger(__name__, args)
+    # logger.info(args)
     set_random_seed(args["seed"])
 
     os.makedirs(args["cache_dir"], exist_ok=True)
