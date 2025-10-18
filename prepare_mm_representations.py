@@ -9,10 +9,7 @@ from models import MMEncoder
 from options.base_options import BaseOption
 from utils.utils import CustomWriter
 
-if __name__ == "__main__":
-    opt = BaseOption()
-    args = parse_args(opt)
-
+def main(args):
     os.makedirs(args.cache_dir, exist_ok=True)
     cache_file_path = os.path.join(args.cache_dir, args.cache_file_name)
     prediction_writer = CustomWriter(output_file=cache_file_path)
@@ -27,3 +24,9 @@ if __name__ == "__main__":
     
     trainer = L.Trainer(strategy="ddp", callbacks=[prediction_writer])
     trainer.predict(model, mm_representation_datamodule, return_predictions=False)
+
+if __name__ == "__main__":
+    opt = BaseOption()
+    args = opt.parse().__dict__
+    
+    main(args)

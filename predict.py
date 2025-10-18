@@ -10,14 +10,17 @@ from models import MMDet
 from options.test_options import TestOption
 from utils.utils import CustomWriter, get_logger, set_random_seed
 
+if __name__ == "__main__":
+    opt = TestOption()
+    args = opt.parse()
 
-def main(args):
-    logger = get_logger(__name__, args)
-    logger.info(args)
-    set_random_seed(args["seed"])
+    config = args.__dict__
+    logger = get_logger(__name__, config)
+    logger.info(config)
+    set_random_seed(config["seed"])
 
-    os.makedirs(args["cache_dir"], exist_ok=True)
-    cache_file_path = os.path.join(args["cache_dir"], args["cache_file_name"])
+    os.makedirs(args.cache_dir, exist_ok=True)
+    cache_file_path = os.path.join(args.cache_dir, args.cache_file_name)
     prediction_writer = CustomWriter(output_file=cache_file_path)
 
     video_dataset = VideoDataset(
@@ -25,22 +28,15 @@ def main(args):
     )
     video_datamodule = VideoDataModule(
         video_dataset,
-        batch_size=args["batch_size"],
-        num_workers=args["num_workers"],
-        mode="test",
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        mode="predict",
     )
 
-    model = MMDet.load_from_checkpoint(args["ckpt_path"], config=args)
+    model = MMDet.load_from_checkpoint(args.ckpt_path, config=config)
     model.eval()
 
     trainer = L.Trainer(
         strategy="ddp_find_unused_parameters_true", callbacks=[prediction_writer]
     )
-    trainer.test(model, video_datamodule)
-
-
-if __name__ == "__main__":
-    opt = TestOption()
-    args = opt.parse().__dict__
-
-    main(args)
+    trainer.predict(model, video_datamodule)

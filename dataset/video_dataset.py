@@ -7,6 +7,7 @@ import lightning as L
 import numpy as np
 import torch
 import zarr
+from datasets import load_dataset
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset, random_split
 
@@ -52,7 +53,9 @@ class AV1MDataModule(L.LightningDataModule):
         if os.path.exists(cache_file):
             with open(cache_file, "r") as file:
                 self.metadata = json.load(file)
-            self.metadata = filter_already_processed(self.cache_file_path, self.metadata)
+            self.metadata = filter_already_processed(
+                self.cache_file_path, self.metadata
+            )
             return
 
         with open(os.path.join(self.data_root, self.metadata_file), "r") as file:
@@ -110,7 +113,9 @@ class GenVidBenchDataModule(L.LightningDataModule):
         if os.path.exists(cache_file):
             with open(cache_file, "r") as file:
                 self.metadata = json.load(file)
-            self.metadata = filter_already_processed(self.cache_file_path, self.metadata)
+            self.metadata = filter_already_processed(
+                self.cache_file_path, self.metadata
+            )
             return
 
         temp_metadata = []
@@ -153,6 +158,26 @@ class GenVidBenchDataModule(L.LightningDataModule):
         )
 
 
+class SAFEVideoChallengeDataModule(L.LightningDataModule):
+
+    def __init__(self, data_root, batch_size, num_workers, cache_file_path):
+        super().__init__()
+        self.data_root = data_root
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.cache_file_path = cache_file_path
+
+    def predict_dataloader(self):
+        DATASET_PATH = "/tmp/data"
+        dataset = load_dataset(DATASET_PATH, split="test", streaming=True)
+        return DataLoader(
+            dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            collate_fn=lambda batch: batch,
+        )
+
+
 class VideoDataset(Dataset):
     def __init__(
         self,
@@ -172,18 +197,19 @@ class VideoDataset(Dataset):
         self.textual = zarr_file["textual"]
         self.label = zarr_file["label"]
 
+        self.validation_sample_index = (
+            {}
+        )  # Use stored index for deterministic validation
+
         self.sample_size = sample_size
-        self.sample_method = sample_method
-        if sample_method not in ["random", "continuous", "entire"]:
+        if sample_method not in ["continuous", "entire"]:
             raise ValueError(
-                f'Sample method should be either "random" or "continuous", but not {self.sample_method}'
+                f'Sample method should be either "continuous" or "entire", but not {sample_method}'
             )
+        self.sample_method = sample_method
         self.transform = get_video_transformation_from_cfg(transform_cfg)
         self.repeat_sample_prob = repeat_sample_prob
         self.interval = interval
-        self.is_test = False
-        self.test_sample_index = {}
-        self.is_predict = False
 
         self.setup()
 
@@ -213,22 +239,27 @@ class VideoDataset(Dataset):
             )
 
         sample_index = []
-        if video in self.test_sample_index:
-            sample_index = self.test_sample_index[video]
-        elif self.sample_method == "random":
-            sample_index = random.sample(range(video_length), self.sample_size)
-        elif self.sample_method == "continuous":
-            sample_start = random.randint(0, video_length - self.sample_size)
-            sample_index = list(range(sample_start, sample_start + self.sample_size))
-        elif self.sample_method == "entire":
-            sample_index = list(range(video_length))
+        if (
+            video in self.validation_sample_index
+        ):  # Use stored index for deterministic validation
+            sample_index = self.validation_sample_index[video]
         else:
-            raise ValueError(
-                f'Sample method should be either "random" or "continuous", but not {self.sample_method}'
-            )
+            # if self.sample_method == "random":
+            #     sample_index = random.sample(range(video_length), self.sample_size)
+            if self.sample_method == "continuous":
+                sample_start = random.randint(0, video_length - self.sample_size)
+                sample_index = list(
+                    range(sample_start, sample_start + self.sample_size)
+                )
+            elif self.sample_method == "entire":
+                sample_index = list(range(video_length))
+            else:
+                raise ValueError(
+                    f'Sample method should be either "continuous" or "entire", but not {self.sample_method}'
+                )
 
-        if self.is_test:
-            self.test_sample_index[video] = sample_index
+            if self.mode == "validation":
+                self.validation_sample_index[video] = sample_index
 
         original_frames, reconstructed_frames = [], []
         for frame_index in sample_index:
@@ -249,13 +280,23 @@ class VideoDataset(Dataset):
         visual_feature = self.visual[video][sample_index[0] // self.interval]
         textual_feature = self.textual[video][sample_index[0] // self.interval]
 
-        if self.is_predict:
+        if self.mode == "predict":
             return (
                 video,
                 torch.stack(original_frames, dim=0),
                 torch.stack(reconstructed_frames, dim=0),
                 torch.tensor(visual_feature),
                 torch.tensor(textual_feature),
+            )
+        if self.mode == "test":
+            label = self.label[video][sample_index]
+            return (
+                video,
+                torch.stack(original_frames, dim=0),
+                torch.stack(reconstructed_frames, dim=0),
+                torch.tensor(visual_feature),
+                torch.tensor(textual_feature),
+                torch.tensor(label, dtype=torch.long),
             )
         else:
             label = np.max(self.label[video][sample_index])
@@ -271,16 +312,24 @@ class VideoDataset(Dataset):
 
 class VideoDataModule(L.LightningDataModule):
 
-    def __init__(
-        self, dataset, batch_size, num_workers, split=[0.8, 0.2], is_predict=False
-    ):
+    def __init__(self, dataset, batch_size, num_workers, mode, split=[0.8, 0.2]):
         super().__init__()
         self.batch_size = batch_size
         self.num_workers = num_workers
-        if is_predict:
-            self.dataset = dataset
-        else:
+        if mode not in ["train", "test", "predict"]:
+            raise ValueError(
+                f'Mode should be either "train", "test", or "predict", but not {mode}'
+            )
+        if mode == "train":
             self.train, self.validation = random_split(dataset, split)
+            self.train.dataset.mode = "train"
+            self.validation.dataset.mode = "validation"
+        elif mode == "test":
+            self.dataset = dataset
+            self.dataset.mode = "test"
+        elif mode == "predict":
+            self.dataset = dataset
+            self.dataset.mode = "predict"
 
     def collate_fn(self, batch):
         (
@@ -295,8 +344,8 @@ class VideoDataModule(L.LightningDataModule):
             video_list,
             torch.stack(original_frames_list),
             torch.stack(reconstructed_frames_list),
-            torch.cat(visual_feature_list),
-            torch.cat(textual_feature_list),
+            torch.stack(visual_feature_list),
+            torch.stack(textual_feature_list),
             torch.stack(label_list),
         )
 
@@ -312,8 +361,8 @@ class VideoDataModule(L.LightningDataModule):
             video_list,
             torch.stack(original_frames_list),
             torch.stack(reconstructed_frames_list),
-            torch.cat(visual_feature_list),
-            torch.cat(textual_feature_list),
+            torch.stack(visual_feature_list),
+            torch.stack(textual_feature_list),
         )
 
     def train_dataloader(self):
@@ -325,7 +374,6 @@ class VideoDataModule(L.LightningDataModule):
         )
 
     def val_dataloader(self):
-        self.validation.dataset.is_test = True
         return DataLoader(
             self.validation,
             batch_size=self.batch_size,
@@ -333,8 +381,15 @@ class VideoDataModule(L.LightningDataModule):
             collate_fn=self.collate_fn,
         )
 
+    def test_dataloader(self):
+        return DataLoader(
+            self.dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            collate_fn=self.collate_fn,
+        )
+
     def predict_dataloader(self):
-        self.dataset.is_predict = True
         return DataLoader(
             self.dataset,
             batch_size=self.batch_size,

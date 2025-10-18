@@ -4,6 +4,7 @@ import lightning as L
 import numpy as np
 import torch
 from einops import rearrange
+from sklearn.metrics import roc_auc_score
 from torch import nn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -115,8 +116,8 @@ class MMDet(L.LightningModule):
             visual_feature.float(),
             textual_feature.float(),
         )
-        x_visual = self.clip_proj(visual_feature).unsqueeze(1)
-        x_mm = self.mm_proj(textual_feature)
+        x_visual = self.clip_proj(visual_feature)
+        x_mm = self.mm_proj(textual_feature).squeeze(1)
         x_feat = torch.cat([x_st, x_visual, x_mm], dim=1)
         x_feat = self.final_fusion(x_feat)
         x_feat = torch.mean(x_feat, dim=1)
@@ -125,7 +126,7 @@ class MMDet(L.LightningModule):
 
     def training_step(self, batch):
         (
-            video,
+            video_list,
             original_frames,
             reconstructed_frames,
             visual_feature,
@@ -136,12 +137,18 @@ class MMDet(L.LightningModule):
             original_frames, reconstructed_frames, visual_feature, textual_feature
         )
         loss = torch.nn.functional.cross_entropy(logits, label)
-        self.log("train_loss", loss, prog_bar=True)
+
+        probs = torch.softmax(logits, dim=1)
+        pos_probs = probs[:, 1].detach().cpu().numpy()
+        y_true = labels.detach().cpu().numpy()
+        auc = roc_auc_score(y_true, pos_probs)
+
+        self.log_dict({"train_loss": loss, "train_auc": auc}, prog_bar=True)
         return loss
 
     def validation_step(self, batch):
         (
-            video,
+            video_list,
             original_frames,
             reconstructed_frames,
             visual_feature,
@@ -151,22 +158,102 @@ class MMDet(L.LightningModule):
         logits = self.forward(
             original_frames, reconstructed_frames, visual_feature, textual_feature
         )
+
         loss = torch.nn.functional.cross_entropy(logits, label)
-        self.log("validation_loss", loss, prog_bar=True)
+
+        probs = torch.softmax(logits, dim=1)
+        pos_probs = probs[:, 1].detach().cpu().numpy()
+        y_true = labels.detach().cpu().numpy()
+        auc = roc_auc_score(y_true, pos_probs)
+
+        self.log_dict({"validation_loss": loss, "validation_auc": auc}, prog_bar=True)
+        return loss
+
+    def test_step(self, batch):
+        (
+            video_list,
+            original_frames,
+            reconstructed_frames,
+            visual_feature,
+            textual_feature,
+            label,
+        ) = batch
+        total_logits = []
+        for interval in range(original_frames.shape[1] // self.window_size):
+            logits = self.forward(
+                original_frames[
+                    :,
+                    interval * self.window_size : (interval + 1) * self.window_size,
+                    :,
+                    :,
+                    :,
+                ],
+                reconstructed_frames[
+                    :,
+                    interval * self.window_size : (interval + 1) * self.window_size,
+                    :,
+                    :,
+                    :,
+                ],
+                visual_feature[:, interval : interval + 1, :],
+                textual_feature[:, interval : interval + 1, :],
+            )
+            total_logits.append(logits.unsqueeze(-1).repeat(1, 1, 10))
+        total_logits = torch.cat(total_logits, dim=1)
+
+        diff = original_frames.shape[1] - total_logits.shape[-1]
+        if diff > 0:
+            last_slice = total_logits[:, :, -1:].repeat(1, 1, diff)
+            total_logits = torch.cat([total_logits, last_slice], dim=-1)
+
+        loss = torch.nn.functional.cross_entropy(total_logits, label)
+
+        self.log_dict({"test_loss": loss}, prog_bar=True)
         return loss
 
     def predict_step(self, batch):
         (
-            video,
+            video_list,
             original_frames,
             reconstructed_frames,
             visual_feature,
             textual_feature,
         ) = batch
-        logits = self.forward(
-            original_frames, reconstructed_frames, visual_feature, textual_feature
-        )
-        return logits
+        total_logits = []
+        for interval in range(original_frames.shape[1] // self.window_size):
+            logits = self.forward(
+                original_frames[
+                    :,
+                    interval * self.window_size : (interval + 1) * self.window_size,
+                    :,
+                    :,
+                    :,
+                ],
+                reconstructed_frames[
+                    :,
+                    interval * self.window_size : (interval + 1) * self.window_size,
+                    :,
+                    :,
+                    :,
+                ],
+                visual_feature[:, interval : interval + 1, :],
+                textual_feature[:, interval : interval + 1, :],
+            )
+            total_logits.append(logits.unsqueeze(-1).repeat(1, 1, 10))
+        total_logits = torch.cat(total_logits, dim=1)
+        
+        diff = original_frames.shape[1] - total_logits.shape[-1]
+        if diff > 0:
+            last_slice = total_logits[:, :, -1:].repeat(1, 1, diff)
+            total_logits = torch.cat([total_logits, last_slice], dim=-1)
+        
+        total_logits = torch.nn.functional.softmax(total_logits, dim=-1)
+        total_logits = total_logits.detach().cpu().numpy()
+
+        return {
+            os.path.join("result", video_id): total_logits[index, :, 0]
+            for index, video_id in enumerate(video_list)
+        }
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-3)

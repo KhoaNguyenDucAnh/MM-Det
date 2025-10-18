@@ -95,10 +95,7 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
         return reconstructed_batch
 
 
-if __name__ == "__main__":
-    opt = BaseOption()
-    args = opt.parse()
-
+def main(args):
     os.makedirs(args.cache_dir, exist_ok=True)
     cache_file_path = os.path.join(args.cache_dir, args.cache_file_name)
     prediction_writer = CustomWriter(output_file=cache_file_path)
@@ -113,3 +110,10 @@ if __name__ == "__main__":
 
     trainer = L.Trainer(callbacks=[prediction_writer])
     trainer.predict(model, reconstruct_datamodule, return_predictions=False)
+
+
+if __name__ == "__main__":
+    opt = BaseOption()
+    args = opt.parse().__dict__
+
+    main(args)

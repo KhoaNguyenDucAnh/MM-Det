@@ -4,19 +4,19 @@ from .base_options import BaseOption
 class TrainOption(BaseOption):
     def __init__(self):
         super().__init__()
-        self.parser.add_argument(
-            "-c",
-            "--classes",
-            type=str,
-            nargs="+",
-            default=["youtube", "stablevideodiffusion"],
-            help="the dataset for training",
-        )
-        self.parser.add_argument(
-            "--fix-split",
-            action="store_true",
-            help="use the fixed split file for training validation split",
-        )
+        # self.parser.add_argument(
+        #     "-c",
+        #     "--classes",
+        #     type=str,
+        #     nargs="+",
+        #     default=["youtube", "stablevideodiffusion"],
+        #     help="the dataset for training",
+        # )
+        # self.parser.add_argument(
+        #     "--fix-split",
+        #     action="store_true",
+        #     help="use the fixed split file for training validation split",
+        # )
         self.parser.add_argument(
             "--split-path", type=str, default="./splits", help="the split directory"
         )
@@ -30,7 +30,7 @@ class TrainOption(BaseOption):
         self.parser.add_argument(
             "--batch-size", type=int, default=2, help="batch size for training"
         )
-        self.parser.add_argument("--mode", type=str, default="train", help="mode")
+        # self.parser.add_argument("--mode", type=str, default="train", help="mode")
         self.parser.add_argument("--epoch", type=int, default=50, help="epoch")
         self.parser.add_argument("--lr", type=float, default=2e-5, help="lr")
         self.parser.add_argument(
