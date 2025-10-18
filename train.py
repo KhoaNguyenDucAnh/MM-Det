@@ -27,7 +27,7 @@ def main(args):
         split=[0.9, 0.1],
     )
 
-    model = MMDet(config)
+    model = MMDet(args)
 
     model_checkpoint = ModelCheckpoint(
         monitor="validation_auc",
