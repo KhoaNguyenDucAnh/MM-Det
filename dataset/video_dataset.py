@@ -10,6 +10,7 @@ import zarr
 from datasets import load_dataset
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset, random_split
+from tqdm import tqdm
 
 from .process import (
     get_image_transformation_from_cfg,
@@ -62,7 +63,7 @@ class AV1MDataModule(L.LightningDataModule):
             temp_metadata = json.load(file)
 
         self.metadata = []
-        for video_id, video_info in enumerate(temp_metadata):
+        for video_id, video_info in enumerate(tqdm(temp_metadata)):
             video_path = os.path.join(self.data_root, video_info["file"])
             if not os.path.exists(video_path):
                 continue
