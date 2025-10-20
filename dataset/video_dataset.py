@@ -27,7 +27,7 @@ from .utils import get_default_transformation_cfg
 def filter_already_processed(cache_file_path, metadata):
     if os.path.exists(cache_file_path):
         zarr_file = zarr.open_group(cache_file_path, mode="r")
-        already_processed_list = list(zarr_file["id"])
+        already_processed_list = set(zarr_file["id"])
         print("metadata", len(metadata))
         metadata = [
             video_info
