@@ -16,10 +16,10 @@ def set_random_seed(seed):
 
 class CustomWriter(BasePredictionWriter):
     def __init__(self, output_file):
-        super().__init__("epoch")
+        super().__init__("batch")
         self.output_file = output_file
 
-    def write_on_epoch_end(
+    def write_on_batch_end(
         self,
         trainer,
         pl_module,
