@@ -84,13 +84,13 @@ def main(args):
     cache_file_path = os.path.join(args["cache_dir"], args["cache_file_name"])
     prediction_writer = CustomWriter(output_file=cache_file_path)
 
-    # av1m_datamodule = AV1MDataModule(
-    #     metadata_file="train_metadata.json",
-    #     data_root=args["data_root"],
-    #     batch_size=6,
-    #     num_workers=6,
-    #     cache_file_path=cache_file_path,
-    # )
+    av1m_datamodule = AV1MDataModule(
+        metadata_file="train_metadata.json",
+        data_root=args["data_root"],
+        batch_size=6,
+        num_workers=6,
+        cache_file_path=cache_file_path,
+    )
 
     # genvidbench_datamodule = GenVidBenchDataModule(
     #     data_root=args["data_root"],
@@ -99,20 +99,19 @@ def main(args):
     #     cache_file_path=cache_file_path,
     # )
 
-    safevideochallenge_datamodule = SAFEVideoChallengeDataModule(
-        data_root=args["data_root"],
-        batch_size=4,
-        num_workers=16,
-        cache_file_path=cache_file_path,
-    )
+    # safevideochallenge_datamodule = SAFEVideoChallengeDataModule(
+    #     data_root=args["data_root"],
+    #     batch_size=4,
+    #     num_workers=16,
+    #     cache_file_path=cache_file_path,
+    # )
 
-    # video_frame_extractor = VideoFrameExtractor()
+    video_frame_extractor = VideoFrameExtractor()
 
-    video_frame_extractor = SAFEVideoChallengeFrameExtractor()
+    # video_frame_extractor = SAFEVideoChallengeFrameExtractor()
 
     trainer = L.Trainer(
         accelerator="cpu",
-        devices=8,
         callbacks=[prediction_writer],
     )
 
