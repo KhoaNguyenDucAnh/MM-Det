@@ -116,7 +116,7 @@ def main(args):
     )
 
     trainer.predict(
-        video_frame_extractor, safevideochallenge_datamodule, return_predictions=False
+        video_frame_extractor, av1m_datamodule, return_predictions=False
     )
 
 
