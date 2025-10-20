@@ -7,12 +7,10 @@ from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from dataset import VideoDataModule, VideoDataset
 from models import MMDet
 from options.train_options import TrainOption
-from utils.utils import set_random_seed
+from utils.utils import set_random_seed, AUCCalculator
 
 
 def main(args):
-    # logger = get_logger(__name__, args)
-    # logger.info(args)
     set_random_seed(args["seed"])
 
     os.makedirs(args["cache_dir"], exist_ok=True)
@@ -29,6 +27,9 @@ def main(args):
 
     model = MMDet(args)
 
+    auc_calculator = AUCCalculator(
+        output_file=cache_file_path,
+    )
     model_checkpoint = ModelCheckpoint(
         monitor="validation_auc",
         mode="min",
@@ -42,7 +43,7 @@ def main(args):
 
     trainer = L.Trainer(
         strategy="ddp_find_unused_parameters_true",
-        callbacks=[model_checkpoint, early_stopping],
+        callbacks=[auc_calculator, model_checkpoint, early_stopping],
         val_check_interval=500,
     )
 

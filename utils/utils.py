@@ -1,14 +1,10 @@
-import json
-import logging
-import os
 import random
-import sys
-from copy import deepcopy
 
 import numpy as np
 import torch
 import zarr
-from lightning.pytorch.callbacks import BasePredictionWriter
+from lightning.pytorch.callbacks import BasePredictionWriter, Callback
+from sklearn.metrics import roc_auc_score
 
 
 def set_random_seed(seed):
@@ -44,3 +40,51 @@ class CustomWriter(BasePredictionWriter):
                 dtype=value.dtype,
                 overwrite=True,
             )
+
+
+class AUCCalculator(Callback):
+    def __init__(self, output_file):
+        super().__init__()
+        self.output_file = output_file
+
+    def on_train_batch_end(
+        self,
+        trainer,
+        pl_module,
+        outputs,
+        batch,
+        batch_idx,
+    ):
+        y_hat = torch.nn.functional.softmax(outputs["logits"], dim=-1)[:, 1]
+        y_hat = y_hat.detach().cpu().numpy()
+        y_true = outputs["label"].detach().cpu().numpy()
+        auc = roc_auc_score(y_true, y_hat)
+        pl_module.log_dict({"train_auc": auc}, sync_dist=True, prog_bar=True)
+
+    def on_validation_batch_end(
+        self,
+        trainer,
+        pl_module,
+        outputs,
+        batch,
+        batch_idx,
+    ):
+        y_hat = torch.nn.functional.softmax(outputs["logits"], dim=-1)[:, 1]
+        y_hat = y_hat.detach().cpu().numpy()
+        y_true = outputs["label"].detach().cpu().numpy()
+        auc = roc_auc_score(y_true, y_hat)
+        pl_module.log_dict({"train_auc": auc}, sync_dist=True, prog_bar=True)
+
+    def on_test_batch_end(
+        self,
+        trainer,
+        pl_module,
+        outputs,
+        batch,
+        batch_idx,
+    ):
+        y_hat = torch.nn.functional.softmax(outputs["logits"], dim=-1)[:, :, 1]
+        y_hat = y_hat.detach().cpu().numpy()
+        y_true = outputs["label"].detach().cpu().numpy()
+        auc = roc_auc_score(y_true, y_hat)
+        pl_module.log_dict({"train_auc": auc}, sync_dist=True, prog_bar=True)
