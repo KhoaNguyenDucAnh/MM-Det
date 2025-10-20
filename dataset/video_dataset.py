@@ -28,13 +28,11 @@ def filter_already_processed(cache_file_path, metadata):
     if os.path.exists(cache_file_path):
         zarr_file = zarr.open_group(cache_file_path, mode="r")
         already_processed_list = set(zarr_file["id"])
-        print("metadata", len(metadata))
         metadata = [
             video_info
             for video_info in metadata
             if video_info[0] not in already_processed_list
         ]
-        print("metadata", len(metadata))
     return metadata
 
 
@@ -85,7 +83,7 @@ class AV1MDataModule(L.LightningDataModule):
                 for index in range(start, end):
                     label[index] = 1
 
-            self.metadata.append([video_id, video_path, label])
+            self.metadata.append([str(video_id), video_path, label])
 
         with open(cache_file, "w") as file:
             json.dump(self.metadata, file)
