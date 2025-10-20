@@ -28,11 +28,13 @@ def filter_already_processed(cache_file_path, metadata):
     if os.path.exists(cache_file_path):
         zarr_file = zarr.open_group(cache_file_path, mode="r")
         already_processed_list = list(zarr_file["id"])
+        print("metadata", len(metadata))
         metadata = [
             video_info
             for video_info in metadata
             if video_info[0] not in already_processed_list
         ]
+        print("metadata", len(metadata))
     return metadata
 
 
