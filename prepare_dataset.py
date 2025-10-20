@@ -36,11 +36,11 @@ class VideoFrameExtractor(L.LightningModule):
 
             label = np.asarray(label)
 
-            extracted_batch[os.path.join("id", video_id)] = np.array([video_path])
-            extracted_batch[os.path.join("original", video_id)] = np.array(
+            extracted_batch[os.path.join("id", str(video_id))] = np.array([video_path])
+            extracted_batch[os.path.join("original", str(video_id))] = np.array(
                 extracted_frames
             )
-            extracted_batch[os.path.join("label", video_id)] = label
+            extracted_batch[os.path.join("label", str(video_id))] = label
         return extracted_batch
 
 
