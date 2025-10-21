@@ -210,7 +210,7 @@ class MMDet(L.LightningModule):
         self.log_dict({"test_loss": loss}, sync_dist=True, prog_bar=True)
 
         y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, :, 1]
-        self.test_loss.update(y_hat, label)
+        self.test_auc.update(y_hat, label)
 
         return {"loss": loss} | {
             os.path.join("test", video_id): y_hat[index]
