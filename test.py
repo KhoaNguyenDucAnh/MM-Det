@@ -12,8 +12,6 @@ from utils.utils import CustomWriter, set_random_seed
 
 
 def main(args):
-    # logger = get_logger(__name__, args)
-    # logger.info(args)
     set_random_seed(args["seed"])
 
     os.makedirs(args["cache_dir"], exist_ok=True)
@@ -21,7 +19,9 @@ def main(args):
     prediction_writer = CustomWriter(output_file=cache_file_path)
 
     video_dataset = VideoDataset(
-        cache_file_path=cache_file_path, sample_method="entire"
+        cache_file_path=cache_file_path,
+        sample_method="entire",
+        interval=args["interval"],
     )
     video_datamodule = VideoDataModule(
         video_dataset,

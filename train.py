@@ -16,7 +16,9 @@ def main(args):
     os.makedirs(args["cache_dir"], exist_ok=True)
     cache_file_path = os.path.join(args["cache_dir"], args["cache_file_name"])
 
-    video_dataset = VideoDataset(cache_file_path=cache_file_path)
+    video_dataset = VideoDataset(
+        cache_file_path=cache_file_path, interval=args["interval"]
+    )
     video_datamodule = VideoDataModule(
         video_dataset,
         batch_size=args["batch_size"],
@@ -33,7 +35,7 @@ def main(args):
         dirpath=args["ckpt_dir"],
         save_top_k=3,
         every_n_train_steps=1000,
-        filename="MM-Det-{epoch:02d}-{validation_auc:.2f}"
+        filename="MM-Det-{epoch:02d}-{validation_auc:.2f}",
     )
     early_stopping = EarlyStopping(
         monitor="validation_loss", mode="min", patience=5, verbose=False
