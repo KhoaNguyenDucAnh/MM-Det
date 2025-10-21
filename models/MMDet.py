@@ -7,6 +7,7 @@ from einops import rearrange
 from torch import nn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torchmetrics.classification import BinaryAUROC
 
 from .vit.stv_transformer_hybrid import vit_base_r50_s16_224_with_recons_iafa
 
@@ -105,6 +106,10 @@ class MMDet(L.LightningModule):
                 elif isinstance(m, nn.Linear):
                     nn.init.normal_(m.weight, std=0.01)
 
+        self.train_auc = BinaryAUROC()
+        self.validation_auc = BinaryAUROC()
+        self.test_auc = BinaryAUROC()
+
     def forward(
         self, original_frames, reconstructed_frames, visual_feature, textual_feature
     ):
@@ -137,15 +142,11 @@ class MMDet(L.LightningModule):
         )
         loss = torch.nn.functional.cross_entropy(logits, label)
         self.log_dict({"train_loss": loss}, sync_dist=True, prog_bar=True)
-        
-        y_hat = torch.nn.functional.softmax(logits, dim=-1)[:, 1]
-        y_hat = y_hat.detach().cpu().numpy()
 
-        return {
-            "loss": loss,
-            "logits": logits,
-            "label": label,
-        }
+        y_hat = torch.nn.functional.softmax(logits, dim=-1)[:, 1]
+        self.train_auc.update(y_hat, label)
+
+        return loss
 
     def validation_step(self, batch):
         (
@@ -163,11 +164,10 @@ class MMDet(L.LightningModule):
         loss = torch.nn.functional.cross_entropy(logits, label)
         self.log_dict({"validation_loss": loss}, sync_dist=True, prog_bar=True)
 
-        return {
-            "loss": loss,
-            "logits": logits,
-            "label": label,
-        }
+        y_hat = torch.nn.functional.softmax(logits, dim=-1)[:, 1]
+        self.validation_auc.update(y_hat, label)
+
+        return loss
 
     def test_step(self, batch):
         (
@@ -208,18 +208,13 @@ class MMDet(L.LightningModule):
 
         loss = torch.nn.functional.cross_entropy(final_logits, label)
         self.log_dict({"test_loss": loss}, sync_dist=True, prog_bar=True)
-        
+
         y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, :, 1]
-        y_hat = y_hat.detach().cpu().numpy()
+        self.test_loss.update(y_hat, label)
 
-        # return {
-        #     os.path.join("test", video_id): y_hat[index]
-        #     for index, video_id in enumerate(video_list)
-        # }
-
-        return {
-            "logits": final_logits,
-            "label": label,
+        return {"loss": loss} | {
+            os.path.join("test", video_id): y_hat[index]
+            for index, video_id in enumerate(video_list)
         }
 
     def predict_step(self, batch):
@@ -252,7 +247,7 @@ class MMDet(L.LightningModule):
             )
             final_logits.append(logits.unsqueeze(-1).repeat(1, 1, 10))
         final_logits = torch.cat(final_logits, dim=1)
-        
+
         diff = original_frames.shape[1] - final_logits.shape[-1]
         if diff > 0:
             last_slice = final_logits[:, :, -1:].repeat(1, 1, diff)
@@ -282,3 +277,23 @@ class MMDet(L.LightningModule):
 
     def lr_scheduler_step(self, scheduler, metric):
         scheduler.step(metric)
+
+    def on_train_epoch_end(self):
+        self.log_dict(
+            {"train_auc": self.train_auc.compute()}, sync_dist=True, prog_bar=True
+        )
+        self.train_auc.reset()
+
+    def on_validation_epoch_end(self):
+        self.log_dict(
+            {"validation_auc": self.validation_auc.compute()},
+            sync_dist=True,
+            prog_bar=True,
+        )
+        self.validation_auc.reset()
+
+    def on_test_epoch_end(self):
+        self.log_dict(
+            {"test_auc": self.test_auc.compute()}, sync_dist=True, prog_bar=True
+        )
+        self.test_auc.reset()
