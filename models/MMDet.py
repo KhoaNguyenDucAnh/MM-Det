@@ -180,7 +180,9 @@ class MMDet(L.LightningModule):
             label,
         ) = batch
         final_logits = []
-        for timestamp in range(original_frames.shape[1] - self.window_size, self.window_size):
+        for timestamp in range(
+            0, original_frames.shape[1] - self.window_size, self.window_size
+        ):
             logits = self.forward(
                 original_frames[
                     :,
@@ -196,8 +198,12 @@ class MMDet(L.LightningModule):
                     :,
                     :,
                 ],
-                visual_feature[:, timestamp // self.interval : timestamp // self.interval + 1, :],
-                textual_feature[:, timestamp // self.interval : timestamp // self.interval + 1, :],
+                visual_feature[
+                    :, timestamp // self.interval : timestamp // self.interval + 1, :
+                ],
+                textual_feature[
+                    :, timestamp // self.interval : timestamp // self.interval + 1, :
+                ],
             )
             final_logits.append(logits.unsqueeze(-1).repeat(1, 1, 10))
         final_logits = torch.cat(final_logits, dim=1)
@@ -227,7 +233,9 @@ class MMDet(L.LightningModule):
             textual_feature,
         ) = batch
         final_logits = []
-        for timestamp in range(original_frames.shape[1] - self.window_size, self.window_size):
+        for timestamp in range(
+            0, original_frames.shape[1] - self.window_size, self.window_size
+        ):
             logits = self.forward(
                 original_frames[
                     :,
@@ -243,8 +251,12 @@ class MMDet(L.LightningModule):
                     :,
                     :,
                 ],
-                visual_feature[:, timestamp // self.interval : timestamp // self.interval + 1, :],
-                textual_feature[:, timestamp // self.interval : timestamp // self.interval + 1, :],
+                visual_feature[
+                    :, timestamp // self.interval : timestamp // self.interval + 1, :
+                ],
+                textual_feature[
+                    :, timestamp // self.interval : timestamp // self.interval + 1, :
+                ],
             )
             final_logits.append(logits.unsqueeze(-1).repeat(1, 1, 10))
         final_logits = torch.cat(final_logits, dim=1)
