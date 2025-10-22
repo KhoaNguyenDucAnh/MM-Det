@@ -22,16 +22,15 @@ class CustomWriter(Callback):
         self,
         trainer,
         pl_module,
-        prediction,
-        batch_indices,
+        outputs,
         batch,
         batch_idx,
         dataloader_idx,
     ):
-        if prediction == None:
+        if outputs == None:
             return
         file = zarr.open_group(self.output_file, mode="a")
-        for key, value in prediction.items():
+        for key, value in outputs.items():
             if key == "loss":
                 continue
             file.array(
@@ -46,16 +45,15 @@ class CustomWriter(Callback):
         self,
         trainer,
         pl_module,
-        prediction,
-        batch_indices,
+        outputs,
         batch,
         batch_idx,
         dataloader_idx,
     ):
-        if prediction == None:
+        if outputs == None:
             return
         file = zarr.open_group(self.output_file, mode="a")
-        for key, value in prediction.items():
+        for key, value in outputs.items():
             if key == "loss":
                 continue
             file.array(
