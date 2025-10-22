@@ -219,6 +219,8 @@ class MMDet(L.LightningModule):
         y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, :, 1]
         self.test_auc.update(y_hat, label)
 
+        y_hat = y_hat.detach().cpu().numpy()
+
         return {"loss": loss} | {
             os.path.join("test", video_id): y_hat[index]
             for index, video_id in enumerate(video_list)
