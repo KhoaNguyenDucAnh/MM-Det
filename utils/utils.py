@@ -25,7 +25,6 @@ class CustomWriter(Callback):
         outputs,
         batch,
         batch_idx,
-        dataloader_idx,
     ):
         if outputs == None:
             return
@@ -48,7 +47,6 @@ class CustomWriter(Callback):
         outputs,
         batch,
         batch_idx,
-        dataloader_idx,
     ):
         if outputs == None:
             return
