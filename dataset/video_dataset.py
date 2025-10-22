@@ -188,6 +188,7 @@ class VideoDataset(Dataset):
         transform_cfg=get_default_transformation_cfg(),
         repeat_sample_prob=0.0,
         interval=200,
+        exclude_groups_name=None,
     ):
         super().__init__()
 
@@ -211,6 +212,7 @@ class VideoDataset(Dataset):
         self.transform = get_video_transformation_from_cfg(transform_cfg)
         self.repeat_sample_prob = repeat_sample_prob
         self.interval = interval
+        self.exclude_groups_name = exclude_groups_name
 
         self.setup()
 
@@ -227,6 +229,15 @@ class VideoDataset(Dataset):
             if video_length < 10:
                 continue
             self.videos.append((video, video_length))
+        if self.exclude_groups_name != None:
+            exclude = set()
+            for group_name in self.exclude_groups_name:
+                exclude |= set(zarr_file[group_name].array_keys())
+            self.videos = [
+                (video, video_length)
+                for video, video_length in self.videos
+                if video not in exclude
+            ]
 
     def __len__(self):
         return len(self.videos)
