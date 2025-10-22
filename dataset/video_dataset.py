@@ -214,6 +214,11 @@ class VideoDataset(Dataset):
         self.interval = interval
         self.exclude_groups_name = exclude_groups_name
 
+        self.exclude = set()
+        if self.exclude_groups_name != None:
+            for group_name in self.exclude_groups_name:
+                self.exclude |= set(zarr_file[group_name].array_keys())
+
         self.setup()
 
     def setup(self):
@@ -228,16 +233,9 @@ class VideoDataset(Dataset):
                 continue
             if video_length < 10:
                 continue
+            if video in self.exclude:
+                continue
             self.videos.append((video, video_length))
-        if self.exclude_groups_name != None:
-            exclude = set()
-            for group_name in self.exclude_groups_name:
-                exclude |= set(zarr_file[group_name].array_keys())
-            self.videos = [
-                (video, video_length)
-                for video, video_length in self.videos
-                if video not in exclude
-            ]
 
     def __len__(self):
         return len(self.videos)
