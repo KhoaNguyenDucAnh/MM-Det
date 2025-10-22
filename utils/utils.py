@@ -16,7 +16,6 @@ def set_random_seed(seed):
 
 class CustomWriter(Callback):
     def __init__(self, output_file):
-        super().__init__("batch")
         self.output_file = output_file
 
     def on_test_batch_end(
