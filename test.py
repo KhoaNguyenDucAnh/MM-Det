@@ -22,7 +22,7 @@ def main(args):
         cache_file_path=cache_file_path,
         sample_method="entire",
         interval=args["interval"],
-        exclude_groups_name="test",
+        exclude_groups_name=["test"],
     )
     video_datamodule = VideoDataModule(
         video_dataset,
