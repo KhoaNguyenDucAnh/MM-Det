@@ -93,6 +93,15 @@ class BaseOption:
             help="whether load mm encoder or use cached representations",
         )
         self.parser.add_argument("--debug", action="store_true", help="debug mode")
+        self.parser.add_argument(
+            "--batch-size", type=int, default=1, help="batch size for testing"
+        )
+        self.parser.add_argument(
+            "--num-workers",
+            type=int,
+            default=4,
+            help="number for dataloader workers per gpu",
+        )
 
     def parse(self):
         return self.parser.parse_args()

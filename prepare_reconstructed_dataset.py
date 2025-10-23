@@ -102,8 +102,8 @@ def main(args):
 
     reconstruct_datamodule = ReconstructDataModule(
         cache_file_path=cache_file_path,
-        batch_size=6,
-        num_workers=6,
+        batch_size=args["batch_size"],
+        num_workers=args["num_workers"],
     )
 
     model = VectorQuantizedVAEWrapper(ckpt=args.vqvae_ckpt, batch_size=64)

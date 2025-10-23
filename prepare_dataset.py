@@ -87,8 +87,8 @@ def main(args):
     av1m_datamodule = AV1MDataModule(
         metadata_file="train_metadata.json",
         data_root=args["data_root"],
-        batch_size=6,
-        num_workers=6,
+        batch_size=args["batch_size"],
+        num_workers=args["num_workers"],
         cache_file_path=cache_file_path,
     )
 
@@ -115,9 +115,7 @@ def main(args):
         callbacks=[prediction_writer],
     )
 
-    trainer.predict(
-        video_frame_extractor, av1m_datamodule, return_predictions=False
-    )
+    trainer.predict(video_frame_extractor, av1m_datamodule, return_predictions=False)
 
 
 if __name__ == "__main__":

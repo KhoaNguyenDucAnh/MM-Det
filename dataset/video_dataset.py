@@ -217,7 +217,7 @@ class VideoDataset(Dataset):
         self.exclude = set()
         if self.exclude_groups_name != None:
             for group_name in self.exclude_groups_name:
-                self.exclude |= set(zarr_file[group_name].array_keys())
+                self.exclude |= set(zarr_file[group_name])
 
         self.setup()
 

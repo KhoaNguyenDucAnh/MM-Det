@@ -9,11 +9,11 @@ class ZarrDataset(Dataset):
         super().__init__()
         zarr_file = zarr.open_group(input_file, mode="r")
         self.data = zarr_file[data_group_name]
-        self.video_id_list = list(self.data.array_keys())
+        self.video_id_list = list(self.data)
         if exclude_groups_name != None:
             exclude = set()
             for group_name in exclude_groups_name:
-                exclude |= set(zarr_file[group_name].array_keys())
+                exclude |= set(zarr_file[group_name])
             self.video_id_list = [
                 video for video in self.video_id_list if video not in exclude
             ]
