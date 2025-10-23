@@ -10,17 +10,17 @@ from options.base_options import BaseOption
 from utils.utils import CustomWriter
 
 def main(args):
-    os.makedirs(args.cache_dir, exist_ok=True)
-    cache_file_path = os.path.join(args.cache_dir, args.cache_file_name)
+    os.makedirs(args.["cache_dir"], exist_ok=True)
+    cache_file_path = os.path.join(args["cache_dir"], args["cache_file_name"])
     prediction_writer = CustomWriter(output_file=cache_file_path)
 
     mm_representation_datamodule = MMRepresentationDataModule(
         cache_file_path=cache_file_path,
-        batch_size=6,
-        num_workers=6,
+        batch_size=args["batch_size"],
+        num_workers=args["num_workers"],
     )
     
-    model = MMEncoder(args.__dict__)
+    model = MMEncoder(args)
     
     trainer = L.Trainer(strategy="ddp", callbacks=[prediction_writer])
     trainer.predict(model, mm_representation_datamodule, return_predictions=False)

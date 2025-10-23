@@ -96,8 +96,8 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
 
 
 def main(args):
-    os.makedirs(args.cache_dir, exist_ok=True)
-    cache_file_path = os.path.join(args.cache_dir, args.cache_file_name)
+    os.makedirs(args["cache_dir"], exist_ok=True)
+    cache_file_path = os.path.join(args["cache_dir"], args["cache_file_name"])
     prediction_writer = CustomWriter(output_file=cache_file_path)
 
     reconstruct_datamodule = ReconstructDataModule(
@@ -106,7 +106,7 @@ def main(args):
         num_workers=args["num_workers"],
     )
 
-    model = VectorQuantizedVAEWrapper(ckpt=args.vqvae_ckpt, batch_size=64)
+    model = VectorQuantizedVAEWrapper(ckpt=args["vqvae_ckpt"], batch_size=64)
 
     trainer = L.Trainer(callbacks=[prediction_writer])
     trainer.predict(model, reconstruct_datamodule, return_predictions=False)
