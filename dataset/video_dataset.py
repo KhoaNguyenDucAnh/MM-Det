@@ -273,7 +273,7 @@ class VideoDataset(Dataset):
             visual_feature = self.visual[video][sample_index[0] // self.interval]
             textual_feature = self.textual[video][sample_index[0] // self.interval]
         elif self.sample_method == "entire":
-                visual_feature = self.visual[video][:]
+            visual_feature = self.visual[video][:]
             textual_feature = self.textual[video][:]
         else:
             raise ValueError(
