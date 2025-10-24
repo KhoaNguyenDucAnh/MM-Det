@@ -64,12 +64,6 @@ class MMEncoder(L.LightningModule):
         return mm_representation
 
     def forward(self, image):
-        # self.model = self.model.to(self.device)
-        # if hasattr(self.model.model, "vision_tower"):
-        #     self.model.model.vision_tower.to(self.device)
-        # if hasattr(self.model.model.vision_tower, "vision_tower"):
-        #     self.model.model.vision_tower.vision_tower.to(self.device)
-
         input_ids = self.tokenizer.apply_chat_template(
             self.get_prompt(image),
             add_generation_prompt=True,

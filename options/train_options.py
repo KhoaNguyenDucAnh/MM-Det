@@ -47,5 +47,5 @@ class TrainOption(BaseOption):
             help="the minimum value for validation metric to finish training",
         )
         self.parser.add_argument(
-            "--ckpt-dir", type=str, default="ckpt_dir", help="checkpoint dirs"
+            "--ckpt-dir", type=str, default="checkpoints", help="checkpoint dirs"
         )

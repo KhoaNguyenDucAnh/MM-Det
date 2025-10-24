@@ -269,8 +269,16 @@ class VideoDataset(Dataset):
             transformed_reconstructed_frame = self.transform(reconstructed_frame)
             reconstructed_frames.append(transformed_reconstructed_frame)
 
-        visual_feature = self.visual[video][sample_index[0] // self.interval]
-        textual_feature = self.textual[video][sample_index[0] // self.interval]
+        if self.sample_method == "continuous":
+            visual_feature = self.visual[video][sample_index[0] // self.interval]
+            textual_feature = self.textual[video][sample_index[0] // self.interval]
+        elif self.sample_method == "entire":
+                visual_feature = self.visual[video][:]
+            textual_feature = self.textual[video][:]
+        else:
+            raise ValueError(
+                f'Sample method should be either "continuous" or "entire", but not {self.sample_method}'
+            )
 
         if self.mode == "predict":
             return (
