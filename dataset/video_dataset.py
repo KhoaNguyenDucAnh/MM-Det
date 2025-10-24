@@ -159,26 +159,6 @@ class GenVidBenchDataModule(L.LightningDataModule):
         )
 
 
-class SAFEVideoChallengeDataModule(L.LightningDataModule):
-
-    def __init__(self, data_root, batch_size, num_workers, cache_file_path):
-        super().__init__()
-        self.data_root = data_root
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.cache_file_path = cache_file_path
-
-    def predict_dataloader(self):
-        DATASET_PATH = "/tmp/data"
-        dataset = load_dataset(DATASET_PATH, split="test", streaming=True)
-        return DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            collate_fn=lambda batch: batch,
-        )
-
-
 class VideoDataset(Dataset):
     def __init__(
         self,
@@ -215,9 +195,11 @@ class VideoDataset(Dataset):
         self.exclude_groups_name = exclude_groups_name
 
         self.exclude = set()
+        groups = set(zarr_file)
         if self.exclude_groups_name != None:
             for group_name in self.exclude_groups_name:
-                self.exclude |= set(zarr_file[group_name])
+                if group_name in groups:
+                    self.exclude |= set(zarr_file[group_name])
 
         self.setup()
 

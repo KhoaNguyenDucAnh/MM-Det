@@ -12,8 +12,10 @@ class ZarrDataset(Dataset):
         self.video_id_list = list(self.data)
         if exclude_groups_name != None:
             exclude = set()
+            groups = set(zarr_file)
             for group_name in exclude_groups_name:
-                exclude |= set(zarr_file[group_name])
+                if group_name in groups:
+                    exclude |= set(zarr_file[group_name])
             self.video_id_list = [
                 video for video in self.video_id_list if video not in exclude
             ]

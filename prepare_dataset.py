@@ -44,41 +44,6 @@ class VideoFrameExtractor(L.LightningModule):
         return extracted_batch
 
 
-class SAFEVideoChallengeFrameExtractor(L.LightningModule):
-    def __init__(self):
-        super().__init__()
-
-    def predict_step(self, batch):
-        extracted_batch = {}
-        for video in batch:
-            video_id = video["id"]
-
-            byte = io.BytesIO(video["video"]["bytes"])
-            byte.seek(0)
-            container = av.open(byte)
-
-            extracted_frames = []
-            for frame in container.decode(video=0):
-                extracted_frames.append(frame.to_ndarray(format="rgb24"))
-
-            extracted_frames = []
-            while True:
-                ret, frame = vc.read()
-                if not ret:
-                    break
-                extracted_frames.append(frame)
-            vc.release()
-
-            label = np.asarray([0] * len(extracted_frames))
-
-            extracted_batch[os.path.join("id", video_id)] = np.array([video_path])
-            extracted_batch[os.path.join("original", video_id)] = np.array(
-                extracted_frames
-            )
-            extracted_batch[os.path.join("label", video_id)] = label
-        return extracted_batch
-
-
 def main(args):
     os.makedirs(args["cache_dir"], exist_ok=True)
     cache_file_path = os.path.join(args["cache_dir"], args["cache_file_name"])
@@ -99,16 +64,7 @@ def main(args):
     #     cache_file_path=cache_file_path,
     # )
 
-    # safevideochallenge_datamodule = SAFEVideoChallengeDataModule(
-    #     data_root=args["data_root"],
-    #     batch_size=4,
-    #     num_workers=16,
-    #     cache_file_path=cache_file_path,
-    # )
-
     video_frame_extractor = VideoFrameExtractor()
-
-    # video_frame_extractor = SAFEVideoChallengeFrameExtractor()
 
     trainer = L.Trainer(
         accelerator="cpu",

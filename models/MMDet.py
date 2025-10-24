@@ -216,7 +216,7 @@ class MMDet(L.LightningModule):
         loss = torch.nn.functional.cross_entropy(final_logits, label)
         self.log_dict({"test_loss": loss}, sync_dist=True, prog_bar=True)
 
-        y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, :, 1]
+        y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, 1, :]
         self.test_auc.update(y_hat, label)
 
         y_hat = y_hat.detach().cpu().numpy()
@@ -268,7 +268,7 @@ class MMDet(L.LightningModule):
             last_slice = final_logits[:, :, -1:].repeat(1, 1, diff)
             final_logits = torch.cat([final_logits, last_slice], dim=-1)
 
-        y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, :, 1]
+        y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, 1, :]
         y_hat = y_hat.detach().cpu().numpy()
 
         return {
