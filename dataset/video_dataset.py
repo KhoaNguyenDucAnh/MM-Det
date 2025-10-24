@@ -270,8 +270,13 @@ class VideoDataset(Dataset):
             reconstructed_frames.append(transformed_reconstructed_frame)
 
         if self.sample_method == "continuous":
-            visual_feature = self.visual[video][sample_index[0] // self.interval]
-            textual_feature = self.textual[video][sample_index[0] // self.interval]
+            visual_textual_feature_index = sample_index[0] // self.interval
+            visual_feature = self.visual[video][
+                visual_textual_feature_index : visual_textual_feature_index + 1
+            ]
+            textual_feature = self.textual[video][
+                visual_textual_feature_index : visual_textual_feature_index + 1
+            ]
         elif self.sample_method == "entire":
             visual_feature = self.visual[video][:]
             textual_feature = self.textual[video][:]
