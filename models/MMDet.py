@@ -207,7 +207,7 @@ class MMDet(L.LightningModule):
                 ],
             )
             final_logits.append(logits.unsqueeze(-1).repeat(1, 1, 10))
-        final_logits = torch.cat(final_logits, dim=1)
+        final_logits = torch.cat(final_logits, dim=-1)
 
         diff = original_frames.shape[1] - final_logits.shape[-1]
         if diff > 0:
@@ -265,7 +265,7 @@ class MMDet(L.LightningModule):
                 ],
             )
             final_logits.append(logits.unsqueeze(-1).repeat(1, 1, 10))
-        final_logits = torch.cat(final_logits, dim=1)
+        final_logits = torch.cat(final_logits, dim=-1)
 
         diff = original_frames.shape[1] - final_logits.shape[-1]
         if diff > 0:
