@@ -182,7 +182,7 @@ class MMDet(L.LightningModule):
         ) = batch
         final_logits = []
         for timestamp in range(
-            0, original_frames.shape[1] - self.window_size, self.window_size
+            0, original_frames.shape[1] - self.window_size + 1, self.window_size
         ):
             logits = self.forward(
                 original_frames[
@@ -240,7 +240,7 @@ class MMDet(L.LightningModule):
         ) = batch
         final_logits = []
         for timestamp in range(
-            0, original_frames.shape[1] - self.window_size, self.window_size
+            0, original_frames.shape[1] - self.window_size + 1, self.window_size
         ):
             logits = self.forward(
                 original_frames[
