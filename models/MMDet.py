@@ -111,7 +111,7 @@ class MMDet(L.LightningModule):
         self.validation_auc = BinaryAUROC()
         self.test_auc = BinaryAUROC()
 
-        self.register_buffer("weight", torch.tensor([0.1, 0.9]))
+        self.loss_weight = torch.tensor([0.1, 0.9])
 
     def forward(
         self, original_frames, reconstructed_frames, visual_feature, textual_feature
@@ -143,7 +143,8 @@ class MMDet(L.LightningModule):
         logits = self.forward(
             original_frames, reconstructed_frames, visual_feature, textual_feature
         )
-        loss = torch.nn.functional.cross_entropy(logits, label, weight=self.weight)
+        self.loss_weight = self.loss_weight.to(logits)
+        loss = torch.nn.functional.cross_entropy(logits, label, weight=self.loss_weight)
 
         y_hat = torch.nn.functional.softmax(logits, dim=-1)[:, 1]
         self.train_auc.update(y_hat, label)
@@ -162,8 +163,8 @@ class MMDet(L.LightningModule):
         logits = self.forward(
             original_frames, reconstructed_frames, visual_feature, textual_feature
         )
-
-        loss = torch.nn.functional.cross_entropy(logits, label, weight=self.weight)
+        self.loss_weight = self.loss_weight.to(logits)
+        loss = torch.nn.functional.cross_entropy(logits, label, weight=self.loss_weight)
 
         y_hat = torch.nn.functional.softmax(logits, dim=-1)[:, 1]
         self.validation_auc.update(y_hat, label)
@@ -213,8 +214,9 @@ class MMDet(L.LightningModule):
             last_slice = final_logits[:, :, -1:].repeat(1, 1, diff)
             final_logits = torch.cat([final_logits, last_slice], dim=-1)
 
+        self.loss_weight = self.loss_weight.to(final_logits)
         loss = torch.nn.functional.cross_entropy(
-            final_logits, label, weight=self.weight
+            final_logits, label, weight=self.loss_weight
         )
         self.log_dict({"test_loss": loss}, sync_dist=True, prog_bar=True)
 
