@@ -55,7 +55,7 @@ class ReconstructDataModule(ZarrDataModule):
         self.dataset = ZarrDataset(self.cache_file_path, "original", ["reconstruct"])
 
 
-class MMRepresentationDataModule(L.LightningDataModule):
+class MMRepresentationDataModule(ZarrDataModule):
 
     def __init__(self, cache_file_path, batch_size, num_workers):
         super().__init__(cache_file_path, batch_size, num_workers)
