@@ -10,7 +10,7 @@ from options.base_options import BaseOption
 from utils.utils import CustomWriter
 
 def main(args):
-    os.makedirs(args.["cache_dir"], exist_ok=True)
+    os.makedirs(args["cache_dir"], exist_ok=True)
     cache_file_path = os.path.join(args["cache_dir"], args["cache_file_name"])
     prediction_writer = CustomWriter(output_file=cache_file_path)
 
