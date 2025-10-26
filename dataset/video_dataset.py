@@ -193,6 +193,7 @@ class VideoDataset(Dataset):
         self.repeat_sample_prob = repeat_sample_prob
         self.interval = interval
         self.exclude_groups_name = exclude_groups_name
+        self.mode = "train"
 
         self.exclude = set()
         groups = set(zarr_file)
@@ -201,9 +202,6 @@ class VideoDataset(Dataset):
                 if group_name in groups:
                     self.exclude |= set(zarr_file[group_name])
 
-        self.setup()
-
-    def setup(self):
         self.videos = []
         for video in self.original:
             video_length = self.original[video].shape[0]
