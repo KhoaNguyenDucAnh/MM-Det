@@ -200,6 +200,8 @@ class VideoDataset(Dataset):
         repeat_sample_prob=0.0,
         interval=200,
         exclude_groups_name=None,
+        cache_result_path=None,
+        num_workers=8,
     ):
         super().__init__()
 
