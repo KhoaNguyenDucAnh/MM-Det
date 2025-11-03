@@ -1,6 +1,8 @@
 import json
 import os
+import pickle
 import random
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import cv2
 import lightning as L
@@ -159,6 +161,35 @@ class GenVidBenchDataModule(L.LightningDataModule):
         )
 
 
+def validate_video(video, zarr_file, interval, exclude):
+    """Validate a single video entry in parallel."""
+    try:
+        original = zarr_file["original"][video]
+        reconstruct = zarr_file["reconstruct"].get(video)
+        visual = zarr_file["visual"].get(video)
+        textual = zarr_file["textual"].get(video)
+        label = zarr_file["label"].get(video)
+
+        if not all([reconstruct, visual, textual, label]):
+            return None
+
+        video_length = original.shape[0]
+        if video_length < 10:
+            return None
+        if (
+            video_length != reconstruct.shape[0]
+            or video_length != label.shape[0]
+            or video_length % interval != visual.shape[1]
+            or video_length % interval != textual.shape[1]
+        ):
+            return None
+        if video in exclude:
+            return None
+        return (video, video_length)
+    except Exception:
+        return None
+
+
 class VideoDataset(Dataset):
     def __init__(
         self,
@@ -202,28 +233,40 @@ class VideoDataset(Dataset):
                 if group_name in groups:
                     self.exclude |= set(zarr_file[group_name])
 
-        self.videos = []
-        for video in self.original:
-            video_length = self.original[video].shape[0]
-            if not (
-                video in self.reconstruct
-                and video in self.visual
-                and video in self.textual
-                and video in self.label
-            ):
-                continue
-            if video_length < 10:
-                continue
-            if (
-                video_length != self.reconstruct[video].shape[0]
-                or video_length != self.label[video].shape[0]
-                or video_length % self.interval != self.visual[video].shape[1]
-                or video_length % self.interval != self.textual[video].shape[1]
-            ):
-                continue
-            if video in self.exclude:
-                continue
-            self.videos.append((video, video_length))
+        # Caching setup
+        if cache_result_path is None:
+            cache_result_path = (
+                os.path.splitext(cache_file_path)[0] + "_videos_cache.pkl"
+            )
+        self.cache_result_path = cache_result_path
+
+        if os.path.exists(self.cache_result_path):
+            print(f"Loading cached video list from {self.cache_result_path}")
+            with open(self.cache_result_path, "rb") as file:
+                self.videos = pickle.load(file)
+        else:
+            print("Building video list in parallel...")
+            all_videos = list(self.original.keys())
+
+            valid_videos = []
+            with ProcessPoolExecutor(max_workers=num_workers) as executor:
+                futures = {
+                    executor.submit(validate_video, video, zarr_file, interval): video
+                    for video in all_videos
+                    if video not in self.exclude
+                }
+
+                for future in as_completed(futures):
+                    result = future.result()
+                    if result:
+                        valid_videos.append(result)
+
+            self.videos = valid_videos
+
+            # Save results to cache
+            with open(self.cache_result_path, "wb") as file:
+                pickle.dump(self.videos, file)
+            print(f"Cached {len(self.videos)} valid videos to {self.cache_result_path}")
 
     def __len__(self):
         return len(self.videos)
