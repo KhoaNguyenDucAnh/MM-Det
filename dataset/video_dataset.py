@@ -205,13 +205,21 @@ class VideoDataset(Dataset):
         self.videos = []
         for video in self.original:
             video_length = self.original[video].shape[0]
-            if video not in self.reconstruct:
-                # Video is not reconstructed
-                continue
-            if video_length != self.reconstruct[video].shape[0]:
-                # Number of frames does not match
+            if not (
+                video in self.reconstruct
+                and video in self.visual
+                and video in self.textual
+                and video in self.label
+            ):
                 continue
             if video_length < 10:
+                continue
+            if (
+                video_length != self.reconstruct[video].shape[0]
+                or video_length != self.label[video].shape[0]
+                or video_length % self.interval != self.visual[video].shape[1]
+                or video_length % self.interval != self.textual[video].shape[1]
+            ):
                 continue
             if video in self.exclude:
                 continue
