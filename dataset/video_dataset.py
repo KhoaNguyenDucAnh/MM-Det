@@ -161,7 +161,7 @@ class GenVidBenchDataModule(L.LightningDataModule):
         )
 
 
-def validate_video(video, zarr_file, interval, exclude):
+def validate_video(video, zarr_file, interval):
     """Validate a single video entry in parallel."""
     try:
         original = zarr_file["original"][video]
@@ -182,8 +182,6 @@ def validate_video(video, zarr_file, interval, exclude):
             or video_length % interval != visual.shape[1]
             or video_length % interval != textual.shape[1]
         ):
-            return None
-        if video in exclude:
             return None
         return (video, video_length)
     except Exception:
