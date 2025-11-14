@@ -256,7 +256,7 @@ class VideoDataset(Dataset):
                     if video not in self.exclude
                 }
 
-                for future in as_completed(futures):
+                for future in tqdm(as_completed(futures), total=len(futures), desc="Validating"):
                     result = future.result()
                     if result:
                         valid_videos.append(result)
