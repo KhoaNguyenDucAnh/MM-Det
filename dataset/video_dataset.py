@@ -179,8 +179,8 @@ def validate_video(video, zarr_file, interval):
         if (
             video_length != reconstruct.shape[0]
             or video_length != label.shape[0]
-            or video_length % interval != visual.shape[1]
-            or video_length % interval != textual.shape[1]
+            or video_length // interval != visual.shape[1]
+            or video_length // interval != textual.shape[1]
         ):
             return None
         return (video, video_length)
