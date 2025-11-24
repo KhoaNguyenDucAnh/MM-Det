@@ -24,7 +24,7 @@ def main(args):
         batch_size=args["batch_size"],
         num_workers=args["num_workers"],
         mode="train",
-        split=[0.95, 0.05],
+        split=[0.9, 0.1],
     )
 
     model = MMDet(args)
@@ -35,7 +35,7 @@ def main(args):
         dirpath=args["ckpt_dir"],
         save_top_k=3,
         every_n_train_steps=1000,
-        filename="MM-Det-{epoch:02d}-{validation_auc:.2f}",
+        filename="MM-Det-{epoch:02d}-{validation_auc:.5f}",
     )
     early_stopping = EarlyStopping(
         monitor="validation_loss", mode="min", patience=5, verbose=False
@@ -43,8 +43,10 @@ def main(args):
 
     trainer = L.Trainer(
         strategy="ddp_find_unused_parameters_true",
-        callbacks=[model_checkpoint, early_stopping],
-        val_check_interval=1000,
+        callbacks=[model_checkpoint],
+        val_check_interval=500,
+        accumulate_grad_batches=16,
+        max_epochs=20,
     )
 
     trainer.fit(model, video_datamodule)

@@ -164,6 +164,7 @@ class GenVidBenchDataModule(L.LightningDataModule):
 def validate_video(video, zarr_file, interval):
     """Validate a single video entry in parallel."""
     try:
+        path = zarr_file["original"][video][0]
         original = zarr_file["original"][video]
         reconstruct = zarr_file["reconstruct"].get(video)
         visual = zarr_file["visual"].get(video)
@@ -175,6 +176,8 @@ def validate_video(video, zarr_file, interval):
 
         video_length = original.shape[0]
         if video_length < 10:
+            return None
+        if "real_video_fake_audio" in path:
             return None
         if (
             video_length != reconstruct.shape[0]
@@ -256,7 +259,9 @@ class VideoDataset(Dataset):
                     if video not in self.exclude
                 }
 
-                for future in tqdm(as_completed(futures), total=len(futures), desc="Validating"):
+                for future in tqdm(
+                    as_completed(futures), total=len(futures), desc="Validating"
+                ):
                     result = future.result()
                     if result:
                         valid_videos.append(result)

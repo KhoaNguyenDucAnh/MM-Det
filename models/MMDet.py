@@ -6,7 +6,7 @@ import torch
 from einops import rearrange
 from torch import nn
 from torch.optim import Adam
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import CosineAnnealingLR, ReduceLROnPlateau
 from torchmetrics.classification import BinaryAUROC
 
 from .vit.stv_transformer_hybrid import vit_base_r50_s16_224_with_recons_iafa
@@ -282,20 +282,27 @@ class MMDet(L.LightningModule):
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-3)
-        scheduler = ReduceLROnPlateau(
-            optimizer,
-            mode="min",
-            factor=self.config["step_factor"],
-            min_lr=1e-08,
-            patience=self.config["patience"],
-            cooldown=self.config["cooldown"],
-        )
+        # scheduler = ReduceLROnPlateau(
+        #     optimizer,
+        #     mode="min",
+        #     factor=self.config["step_factor"],
+        #     min_lr=1e-08,
+        #     patience=self.config["patience"],
+        #     cooldown=self.config["cooldown"],
+        # )
+        scheduler = CosineAnnealingLR(optimizer, T_max=50)
         return [optimizer], [
-            {"scheduler": scheduler, "interval": "epoch", "monitor": "validation_loss"}
+            {
+                "scheduler": scheduler,
+                "interval": "step",
+                "frequency": 500,
+                "strict": True,
+                "monitor": "validation_auc",
+            }
         ]
 
-    def lr_scheduler_step(self, scheduler, metric):
-        scheduler.step(metric)
+    # def lr_scheduler_step(self, scheduler, metric):
+    #     scheduler.step(metric)
 
     def on_train_batch_end(self, outputs, batch, batch_idx):
         self.log_dict({"train_loss": outputs["loss"]}, sync_dist=True, prog_bar=True)
