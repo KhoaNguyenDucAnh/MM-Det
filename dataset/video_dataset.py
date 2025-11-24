@@ -373,22 +373,59 @@ class VideoDataModule(L.LightningDataModule):
 
     def __init__(self, dataset, batch_size, num_workers, mode, split=[0.8, 0.2]):
         super().__init__()
+        self.dataset_obj = dataset
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.mode = mode
+        self.split = split
+
         if mode not in ["train", "test", "predict"]:
             raise ValueError(
                 f'Mode should be either "train", "test", or "predict", but not {mode}'
             )
+
         if mode == "train":
             self.train, self.validation = random_split(dataset, split)
+            self.train_indices = self.train.indices
+            self.val_indices = self.validation.indices
+
             self.train.dataset.mode = "train"
             self.validation.dataset.mode = "validation"
-        elif mode == "test":
+
+        else:
             self.dataset = dataset
-            self.dataset.mode = "test"
-        elif mode == "predict":
-            self.dataset = dataset
-            self.dataset.mode = "predict"
+            self.dataset.mode = mode
+            self.train_indices = None
+            self.val_indices = None
+
+    def state_dict(self):
+        return {
+            "mode": self.mode,
+            "batch_size": self.batch_size,
+            "num_workers": self.num_workers,
+            "split": self.split,
+            "train_indices": self.train_indices,
+            "val_indices": self.val_indices,
+        }
+
+    def load_state_dict(self, state_dict):
+        self.mode = state_dict["mode"]
+        self.batch_size = state_dict["batch_size"]
+        self.num_workers = state_dict["num_workers"]
+        self.split = state_dict["split"]
+        self.train_indices = state_dict["train_indices"]
+        self.val_indices = state_dict["val_indices"]
+
+        if self.mode == "train":
+            self.train = torch.utils.data.Subset(self.dataset_obj, self.train_indices)
+            self.validation = torch.utils.data.Subset(
+                self.dataset_obj, self.val_indices
+            )
+            self.train.dataset.mode = "train"
+            self.validation.dataset.mode = "validation"
+        else:
+            self.dataset = self.dataset_obj
+            self.dataset.mode = self.mode
 
     def collate_fn(self, batch):
         (
