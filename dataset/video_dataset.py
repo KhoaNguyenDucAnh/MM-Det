@@ -59,13 +59,14 @@ class AV1MDataModule(L.LightningDataModule):
             self.metadata = filter_already_processed(
                 self.cache_file_path, self.metadata
             )
+            random.shuffle(self.metadata)
             return
 
         with open(os.path.join(self.data_root, self.metadata_file), "r") as file:
             temp_metadata = json.load(file)
 
         self.metadata = []
-        for video_id, video_info in enumerate(tqdm(temp_metadata)):
+        for video_id, video_info in enumerate(tqdm(temp_metadata, desc="Preprocessing metadata")):
             video_path = os.path.join(self.data_root, video_info["file"])
             if not os.path.exists(video_path):
                 continue
