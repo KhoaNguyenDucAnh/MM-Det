@@ -31,7 +31,7 @@ class VideoFrameExtractor(L.LightningModule):
                 ret, frame = vc.read()
                 if not ret:
                     break
-                extracted_frames.append(frame)
+                extracted_frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             vc.release()
 
             label = np.asarray(label)
