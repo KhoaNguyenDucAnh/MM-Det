@@ -3,7 +3,11 @@ import os
 import lightning as L
 import numpy as np
 import torch
-from llava.mm_utils import get_model_name_from_path
+from llava.mm_utils import (
+    get_model_name_from_path,
+    process_images,
+    tokenizer_image_token,
+)
 from llava.model.builder import load_pretrained_model
 from PIL import Image
 from transformers import AutoModel, AutoProcessor, BitsAndBytesConfig
@@ -123,9 +127,7 @@ class MMEncoder(L.LightningModule):
 
         image_t = process_images(images, self.image_processor, self.model.config)
         if type(image_t) is list:
-            image_t = [
-                image.to(self.device, dtype=torch.float16) for image in image_t
-            ]
+            image_t = [image.to(self.device, dtype=torch.float16) for image in image_t]
         else:
             image_t = [image_t.to(self.device, dtype=torch.float16)]
         prompt = self.get_prompt()
