@@ -22,28 +22,13 @@ class MMEncoder(L.LightningModule):
             load_8bit=config["load_8bit"],
             load_4bit=config["load_4bit"],
             model_name=get_model_name_from_path(config["lmm_ckpt"]),
-            # map_location="cpu",  # <- important if your loader supports this arg
             device_map=None,  # <- avoid automatic device_map
         )
-        self.tokenizer.chat_template = """{% for message in messages %}{% if message['role'] != 'system' %}{{ message['role'].upper() + ': '}}{% endif %}{# Render all images first #}{% for content in message['content'] | selectattr('type', 'equalto', 'image') %}{{ '<image>\n' }}{% endfor %}{# Render all text next #}{% for content in message['content'] | selectattr('type', 'equalto', 'text') %}{{ content['text'] + ' '}}{% endfor %}{% endfor %}{% if add_generation_prompt %}{{ 'ASSISTANT:' }}{% endif %}"""
+        # self.tokenizer.chat_template = """{% for message in messages %}{% if message['role'] != 'system' %}{{ message['role'].upper() + ': '}}{% endif %}{# Render all images first #}{% for content in message['content'] | selectattr('type', 'equalto', 'image') %}{{ '<image>\n' }}{% endfor %}{# Render all text next #}{% for content in message['content'] | selectattr('type', 'equalto', 'text') %}{{ content['text'] + ' '}}{% endfor %}{% endfor %}{% if add_generation_prompt %}{{ 'ASSISTANT:' }}{% endif %}"""
 
-    def get_prompt(self, image):
-        return [
-            {
-                "role": "system",
-                "content": "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.",
-            },
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image", "image": image},
-                    {
-                        "type": "text",
-                        "text": "As an expert in image forensics, you are to briefly describe the image, including lighting and reflection, texture, color saturation, shape consistency, sense of depth, compression trace, artifacts. Give a reason to justify whether it is a real or a fake image.",
-                    },
-                ],
-            },
-        ]
+        self.vision_tower = self.model.get_vision_tower().vision_tower
+        vision_tower_config_path = getattr(self.vision_tower.config, "_name_or_path")
+        self.visual_processor = AutoProcessor.from_pretrained(vision_tower_config_path)
 
     def predict_step(self, batch):
         mm_representation = {}
@@ -63,45 +48,121 @@ class MMEncoder(L.LightningModule):
             )
         return mm_representation
 
-    def forward(self, image):
-        input_ids = self.tokenizer.apply_chat_template(
-            self.get_prompt(image),
-            add_generation_prompt=True,
-            tokenize=True,
-            return_tensors="pt",
-        ).to(self.device)
+    def get_prompt(self, image):
+        # return [
+        #     {
+        #         "role": "system",
+        #         "content": "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.",
+        #     },
+        #     {
+        #         "role": "user",
+        #         "content": [
+        #             {"type": "image", "image": image},
+        #             {
+        #                 "type": "text",
+        #                 "text": "As an expert in image forensics, you are to briefly describe the image, including lighting and reflection, texture, color saturation, shape consistency, sense of depth, compression trace, artifacts. Give a reason to justify whether it is a real or a fake image.",
+        #             },
+        #         ],
+        #     },
+        # ]
+        assistant_intro = "Assistant: A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.###"
+        human_instruction = "Human: <image>\nAs an expert in image forensics, you are to briefly describe the image, including lighting and reflection, texture, color saturation, shape consistency, sense of depth, compression trace, artifacts. Give a reason to justify whether it is a real or a fake image.###"
+        assistant_response = "Assistant:"
+        text = assistant_intro + human_instruction + assistant_response
+        return text
 
-        processed_image = self.image_processor(images=image, return_tensors="pt").to(
+    def encode_visual_features(self, images, image_sizes=None):
+        visual_input = self.visual_processor(images=images, return_tensors="pt").to(
             self.device
-        )["pixel_values"]
-        processed_image = processed_image.half()
-        visual_features = self.model.model.vision_tower.vision_tower(
-            processed_image
-        ).pooler_output
-
-        output = self.model.generate(
-            input_ids,
-            images=processed_image,
-            do_sample=False,
-            min_new_tokens=self.new_tokens,
-            max_new_tokens=self.new_tokens,
-            use_cache=True,
-            output_hidden_states=True,
-            return_dict_in_generate=True,
         )
+        visual_input["pixel_values"] = visual_input["pixel_values"].half()
+        clip_features = (
+            self.model.get_vision_tower().vision_tower(**visual_input).pooler_output
+        )
+        return clip_features
 
-        # print(self.tokenizer.decode(output.sequences[0]))
+    def forward(self, image):
+        # input_ids = self.tokenizer.apply_chat_template(
+        #     self.get_prompt(image),
+        #     add_generation_prompt=True,
+        #     tokenize=True,
+        #     return_tensors="pt",
+        # ).to(self.device)
 
-        textual_features = []
-        for layer_index in self.selected_layers:
-            hidden_feature = [
-                hidden_state[layer_index] for hidden_state in output["hidden_states"]
+        # processed_image = self.image_processor(images=image, return_tensors="pt").to(
+        #     self.device
+        # )["pixel_values"]
+        # processed_image = processed_image.half()
+        # visual_features = self.model.model.vision_tower.vision_tower(
+        #     processed_image
+        # ).pooler_output
+
+        # output = self.model.generate(
+        #     input_ids,
+        #     images=processed_image,
+        #     do_sample=False,
+        #     min_new_tokens=self.new_tokens,
+        #     max_new_tokens=self.new_tokens,
+        #     use_cache=True,
+        #     output_hidden_states=True,
+        #     return_dict_in_generate=True,
+        # )
+
+        # # print(self.tokenizer.decode(output.sequences[0]))
+
+        # textual_features = []
+        # for layer_index in self.selected_layers:
+        #     hidden_feature = [
+        #         hidden_state[layer_index] for hidden_state in output["hidden_states"]
+        #     ]
+        #     hidden_feature = torch.cat(hidden_feature, dim=1)
+        #     hidden_feature = hidden_feature[:, -self.new_tokens :, :]
+        #     textual_features.append(hidden_feature)
+        # textual_features = torch.cat(textual_features, dim=0)
+        # return visual_features, textual_features
+
+        image_t = process_images(images, self.image_processor, self.model.config)
+        if type(image_t) is list:
+            image_t = [
+                image.to(self.device, dtype=torch.float16) for image in image_t
             ]
-            hidden_feature = torch.cat(hidden_feature, dim=1)
-            hidden_feature = hidden_feature[:, -self.new_tokens :, :]
-            textual_features.append(hidden_feature)
+        else:
+            image_t = [image_t.to(self.device, dtype=torch.float16)]
+        prompt = self.get_prompt()
+        input_ids = (
+            tokenizer_image_token(
+                prompt, self.tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt"
+            )
+            .unsqueeze(0)
+            .to(self.device)
+        )
+        visual_features = self.encode_visual_features(
+            images=images, image_sizes=image_sizes
+        )
+        textual_features = []
+        for idx, t in enumerate(image_t[0]):
+            output = self.model.generate(
+                input_ids,
+                images=t.unsqueeze(0),
+                image_sizes=[image_sizes[idx]],
+                do_sample=False,
+                min_new_tokens=self.new_tokens,
+                max_new_tokens=self.new_tokens,
+                use_cache=True,
+                output_hidden_states=True,
+                return_dict_in_generate=True,
+            )
+            hidden_features = []
+            for i in self.selected_layers:
+                for hs in output["hidden_states"]:
+                    hidden_features.append(hs[i])
+                hidden_feature = torch.cat(hidden_features, dim=1)
+                new_token_feature = hidden_feature[
+                    :, hidden_feature.size(1) - self.new_tokens :, :
+                ]
+                textual_features.append(new_token_feature)
         textual_features = torch.cat(textual_features, dim=0)
-        return visual_features, textual_features
+        return visual_features.clone(), textual_features.clone()
 
 
 # class MMEncoderBase(L.LightningModule):
