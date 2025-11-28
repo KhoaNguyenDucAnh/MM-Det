@@ -91,6 +91,7 @@ class AV1MDataModule(L.LightningDataModule):
             json.dump(self.metadata, file)
 
         self.metadata = filter_already_processed(self.cache_file_path, self.metadata)
+        random.shuffle(self.metadata)
 
     def predict_dataloader(self):
         return DataLoader(
