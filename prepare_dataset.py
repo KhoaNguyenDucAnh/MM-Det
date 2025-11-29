@@ -1,5 +1,6 @@
 import json
 import os
+import tempfile
 
 import cv2
 import lightning as L
@@ -31,7 +32,9 @@ class VideoFrameExtractor(L.LightningModule):
                 ret, frame = vc.read()
                 if not ret:
                     break
-                extracted_frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                with tempfile.NamedTemporaryFile(suffix=".jpg") as tmp:
+                    cv2.imwrite(tmp.name, frame)
+                    extracted_frames.append(np.uint8(Image.open(tmp.name).convert("RGB")))
             vc.release()
 
             label = np.asarray(label)
