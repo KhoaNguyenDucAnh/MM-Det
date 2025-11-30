@@ -50,10 +50,10 @@ class MMEncoder(L.LightningModule):
                 visual_features, textual_features = self.forward(frame)
                 visual_features_list.append(visual_features.detach().cpu().numpy())
                 textual_features_list.append(textual_features.detach().cpu().numpy())
-            mm_representation[os.path.join("visual", video_path)] = np.stack(
+            mm_representation[os.path.join("visual", video_path)] = np.concatenate(
                 visual_features_list
             )
-            mm_representation[os.path.join("textual", video_path)] = np.stack(
+            mm_representation[os.path.join("textual", video_path)] = np.concatenate(
                 textual_features_list
             )
         return mm_representation
