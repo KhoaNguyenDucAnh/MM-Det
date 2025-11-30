@@ -45,31 +45,15 @@ class MMEncoder(L.LightningModule):
                 visual_features, textual_features = self.forward(frame)
                 visual_features_list.append(visual_features.detach().cpu().numpy())
                 textual_features_list.append(textual_features.detach().cpu().numpy())
-            mm_representation[os.path.join("visual", video_path)] = np.array(
+            mm_representation[os.path.join("visual", video_path)] = np.stack(
                 visual_features_list
             )
-            mm_representation[os.path.join("textual", video_path)] = np.array(
+            mm_representation[os.path.join("textual", video_path)] = np.stack(
                 textual_features_list
             )
         return mm_representation
 
     def get_prompt(self, image):
-        # return [
-        #     {
-        #         "role": "system",
-        #         "content": "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.",
-        #     },
-        #     {
-        #         "role": "user",
-        #         "content": [
-        #             {"type": "image", "image": image},
-        #             {
-        #                 "type": "text",
-        #                 "text": "As an expert in image forensics, you are to briefly describe the image, including lighting and reflection, texture, color saturation, shape consistency, sense of depth, compression trace, artifacts. Give a reason to justify whether it is a real or a fake image.",
-        #             },
-        #         ],
-        #     },
-        # ]
         assistant_intro = "Assistant: A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.###"
         human_instruction = "Human: <image>\nAs an expert in image forensics, you are to briefly describe the image, including lighting and reflection, texture, color saturation, shape consistency, sense of depth, compression trace, artifacts. Give a reason to justify whether it is a real or a fake image.###"
         assistant_response = "Assistant:"
@@ -87,46 +71,9 @@ class MMEncoder(L.LightningModule):
         return clip_features
 
     def forward(self, image):
-        # input_ids = self.tokenizer.apply_chat_template(
-        #     self.get_prompt(image),
-        #     add_generation_prompt=True,
-        #     tokenize=True,
-        #     return_tensors="pt",
-        # ).to(self.device)
-
-        # processed_image = self.image_processor(images=image, return_tensors="pt").to(
-        #     self.device
-        # )["pixel_values"]
-        # processed_image = processed_image.half()
-        # visual_features = self.model.model.vision_tower.vision_tower(
-        #     processed_image
-        # ).pooler_output
-
-        # output = self.model.generate(
-        #     input_ids,
-        #     images=processed_image,
-        #     do_sample=False,
-        #     min_new_tokens=self.new_tokens,
-        #     max_new_tokens=self.new_tokens,
-        #     use_cache=True,
-        #     output_hidden_states=True,
-        #     return_dict_in_generate=True,
-        # )
-
-        # # print(self.tokenizer.decode(output.sequences[0]))
-
-        # textual_features = []
-        # for layer_index in self.selected_layers:
-        #     hidden_feature = [
-        #         hidden_state[layer_index] for hidden_state in output["hidden_states"]
-        #     ]
-        #     hidden_feature = torch.cat(hidden_feature, dim=1)
-        #     hidden_feature = hidden_feature[:, -self.new_tokens :, :]
-        #     textual_features.append(hidden_feature)
-        # textual_features = torch.cat(textual_features, dim=0)
-        # return visual_features, textual_features
-
-        image_t = process_images([image], self.image_processor, self.model.config)
+        images = [Image.fromarray(image)]
+        image_sizes = [images[0].size]
+        image_t = process_images(images, self.image_processor, self.model.config)
         if type(image_t) is list:
             image_t = [image.to(self.device, dtype=torch.float16) for image in image_t]
         else:
