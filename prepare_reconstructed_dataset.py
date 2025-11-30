@@ -35,17 +35,14 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
         return self.model(X)
 
     def denormalize_batch_t(self, img_t, mean, std):
-        try:
-            assert len(mean) == len(std)
-            assert len(mean) == img_t.shape[1]
-        except:
-            print(
-                f"Unmatched channels between image tensors and normalization mean and std. Got {img_t.shape[1]}, {len(mean)}, {len(std)}."
-            )
-        img_denorm = torch.empty_like(img_t)
-        for t in range(img_t.shape[1]):
-            img_denorm[:, t, :, :] = (img_t[:, t, :, :].clone() * std[t]) + mean[t]
-        return img_denorm
+        mean = torch.as_tensor(mean, dtype=img_t.dtype, device=img_t.device)[
+            None, :, None, None
+        ]
+        std = torch.as_tensor(std, dtype=img_t.dtype, device=img_t.device)[
+            None, :, None, None
+        ]
+
+        return img_t * std + mean
 
     def postprocess_reconstructed_frames(
         self, frames_batch, reconstructed_frames_batch
@@ -79,7 +76,7 @@ class VectorQuantizedVAEWrapper(L.LightningModule):
                         for frame in extracted_frames[i : i + self.batch_size]
                     ]
                 )
-                frames_batch = frames_batch.to(next(self.model.parameters()).device)
+                frames_batch = frames_batch.to(self.device)
                 reconstructed_frames_batch, _, _ = self.forward(frames_batch)
 
                 reconstructed_frames_batch = self.postprocess_reconstructed_frames(
