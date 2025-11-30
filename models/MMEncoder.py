@@ -35,6 +35,11 @@ class MMEncoder(L.LightningModule):
         vision_tower_config_path = getattr(self.vision_tower.config, "_name_or_path")
         self.visual_processor = AutoProcessor.from_pretrained(vision_tower_config_path)
 
+        assistant_intro = "Assistant: A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.###"
+        human_instruction = "Human: <image>\nAs an expert in image forensics, you are to briefly describe the image, including lighting and reflection, texture, color saturation, shape consistency, sense of depth, compression trace, artifacts. Give a reason to justify whether it is a real or a fake image.###"
+        assistant_response = "Assistant:"
+        self.prompt = assistant_intro + human_instruction + assistant_response
+
     def predict_step(self, batch):
         mm_representation = {}
         for video_path, extracted_frames in batch:
@@ -52,13 +57,6 @@ class MMEncoder(L.LightningModule):
                 textual_features_list
             )
         return mm_representation
-
-    def get_prompt(self, image):
-        assistant_intro = "Assistant: A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.###"
-        human_instruction = "Human: <image>\nAs an expert in image forensics, you are to briefly describe the image, including lighting and reflection, texture, color saturation, shape consistency, sense of depth, compression trace, artifacts. Give a reason to justify whether it is a real or a fake image.###"
-        assistant_response = "Assistant:"
-        text = assistant_intro + human_instruction + assistant_response
-        return text
 
     def encode_visual_features(self, images, image_sizes=None):
         visual_input = self.visual_processor(images=images, return_tensors="pt").to(
@@ -78,10 +76,9 @@ class MMEncoder(L.LightningModule):
             image_t = [image.to(self.device, dtype=torch.float16) for image in image_t]
         else:
             image_t = [image_t.to(self.device, dtype=torch.float16)]
-        prompt = self.get_prompt()
         input_ids = (
             tokenizer_image_token(
-                prompt, self.tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt"
+                self.prompt, self.tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt"
             )
             .unsqueeze(0)
             .to(self.device)
