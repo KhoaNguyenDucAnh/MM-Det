@@ -3,6 +3,7 @@ import os
 import lightning as L
 import numpy as np
 import torch
+from llava.constants import IMAGE_TOKEN_INDEX
 from llava.mm_utils import (
     get_model_name_from_path,
     process_images,
@@ -125,7 +126,7 @@ class MMEncoder(L.LightningModule):
         # textual_features = torch.cat(textual_features, dim=0)
         # return visual_features, textual_features
 
-        image_t = process_images(images, self.image_processor, self.model.config)
+        image_t = process_images([image], self.image_processor, self.model.config)
         if type(image_t) is list:
             image_t = [image.to(self.device, dtype=torch.float16) for image in image_t]
         else:
