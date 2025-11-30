@@ -68,6 +68,8 @@ def main(args):
 
     trainer = L.Trainer(
         accelerator="cpu",
+        devices=32,
+        strategy="ddp",
         callbacks=[prediction_writer],
     )
 
