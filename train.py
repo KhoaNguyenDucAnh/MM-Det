@@ -1,6 +1,7 @@
 import os
 
 import lightning as L
+import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
@@ -49,7 +50,7 @@ def main(args):
 
     previous_checkpoint_path = ""
     if previous_checkpoint_path != "":
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(previous_checkpoint_path)
         video_datamodule.load_state_dict(checkpoint["VideoDataModule"])
         trainer.fit(model, video_datamodule, ckpt_path=previous_checkpoint_path)
     else:
