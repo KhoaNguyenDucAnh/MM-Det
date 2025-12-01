@@ -43,10 +43,9 @@ def main(args):
     trainer = L.Trainer(
         strategy="ddp_find_unused_parameters_true",
         callbacks=[model_checkpoint],
-        limit_train_batches=100,
+        limit_train_batches=500,
         accumulate_grad_batches=16,
-        max_epochs=20,
-        num_sanity_val_steps=0,
+        max_epochs=100,
     )
 
     trainer.fit(model, video_datamodule)

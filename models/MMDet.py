@@ -123,8 +123,8 @@ class MMDet(L.LightningModule):
             visual_feature.float(),
             textual_feature.float(),
         )
-        x_visual = self.clip_proj(visual_feature).squeeze(1)
-        x_mm = self.mm_proj(textual_feature).squeeze((1, 2))
+        x_visual = self.clip_proj(visual_feature)
+        x_mm = self.mm_proj(textual_feature).squeeze(1)
         x_feat = torch.cat([x_st, x_visual, x_mm], dim=1)
         x_feat = self.final_fusion(x_feat)
         x_feat = torch.mean(x_feat, dim=1)
