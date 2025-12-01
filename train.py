@@ -31,7 +31,7 @@ def main(args):
 
     model_checkpoint = ModelCheckpoint(
         monitor="validation_auc",
-        mode="min",
+        mode="max",
         dirpath=args["ckpt_dir"],
         save_top_k=3,
         filename="MM-Det-{epoch:02d}-{validation_auc:.5f}",
@@ -43,7 +43,7 @@ def main(args):
     trainer = L.Trainer(
         strategy="ddp_find_unused_parameters_true",
         callbacks=[model_checkpoint],
-        limit_train_batches=500,
+        # limit_train_batches=500,
         accumulate_grad_batches=16,
         max_epochs=args["max_epochs"],
     )

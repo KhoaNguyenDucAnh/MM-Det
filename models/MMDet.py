@@ -277,7 +277,7 @@ class MMDet(L.LightningModule):
         optimizer = Adam(self.parameters(), lr=1e-3)
         # scheduler = ReduceLROnPlateau(
         #     optimizer,
-        #     mode="min",
+        #     mode="max",
         #     factor=self.config["step_factor"],
         #     min_lr=1e-08,
         #     patience=self.config["patience"],
