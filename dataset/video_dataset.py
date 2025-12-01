@@ -2,6 +2,7 @@ import json
 import os
 import random
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from math import ceil
 
 import cv2
 import lightning as L
@@ -65,7 +66,9 @@ class AV1MDataModule(L.LightningDataModule):
             temp_metadata = json.load(file)
 
         self.metadata = []
-        for video_id, video_info in enumerate(tqdm(temp_metadata, desc="Preprocessing metadata")):
+        for video_id, video_info in enumerate(
+            tqdm(temp_metadata, desc="Preprocessing metadata")
+        ):
             video_path = os.path.join(self.data_root, video_info["file"])
             if not os.path.exists(video_path):
                 continue
@@ -183,8 +186,8 @@ def validate_video(video, zarr_file, interval):
         if (
             video_length != reconstruct.shape[0]
             or video_length != label.shape[0]
-            or video_length // interval != visual.shape[0]
-            or video_length // interval != textual.shape[0]
+            or ceil(video_length / interval) != visual.shape[0]
+            or ceil(video_length / interval) != textual.shape[0]
         ):
             return None
         return (video, video_length)
