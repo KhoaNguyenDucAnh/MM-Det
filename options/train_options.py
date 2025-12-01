@@ -49,3 +49,6 @@ class TrainOption(BaseOption):
         self.parser.add_argument(
             "--ckpt-dir", type=str, default="checkpoints", help="checkpoint dirs"
         )
+        self.parser.add_argument(
+            "--max-epochs", type=int, default=1000, help="max epochs"
+        )

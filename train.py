@@ -24,7 +24,7 @@ def main(args):
         batch_size=args["batch_size"],
         num_workers=args["num_workers"],
         mode="train",
-        split=[0.9, 0.1],
+        split=[0.8, 0.2],
     )
 
     model = MMDet(args)
@@ -45,7 +45,7 @@ def main(args):
         callbacks=[model_checkpoint],
         limit_train_batches=500,
         accumulate_grad_batches=16,
-        max_epochs=100,
+        max_epochs=args["max_epochs"],
     )
 
     trainer.fit(model, video_datamodule)

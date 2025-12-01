@@ -74,7 +74,7 @@ class MMDet(L.LightningModule):
         self.config = config
         self.window_size = config["window_size"]
         self.interval = config["interval"]
-        self.st_pretrained = config["st_pretrained"]
+        self.max_epochs = config["max_epochs"]
         self.st_ckpt = config["st_ckpt"]
         self.lmm_ckpt = config["lmm_ckpt"]
         if (not self.st_ckpt or not os.path.exists(self.st_ckpt)) and config[
@@ -111,8 +111,6 @@ class MMDet(L.LightningModule):
         self.validation_auc = BinaryAUROC()
         self.test_auc = BinaryAUROC()
 
-        self.loss_weight = torch.tensor([0.1, 0.9])
-
     def forward(
         self, original_frames, reconstructed_frames, visual_feature, textual_feature
     ):
@@ -143,8 +141,7 @@ class MMDet(L.LightningModule):
         logits = self.forward(
             original_frames, reconstructed_frames, visual_feature, textual_feature
         )
-        self.loss_weight = self.loss_weight.to(logits)
-        loss = torch.nn.functional.cross_entropy(logits, label, weight=self.loss_weight)
+        loss = torch.nn.functional.cross_entropy(logits, label)
 
         y_hat = torch.nn.functional.softmax(logits, dim=-1)[:, 1]
         self.train_auc.update(y_hat, label)
@@ -163,8 +160,7 @@ class MMDet(L.LightningModule):
         logits = self.forward(
             original_frames, reconstructed_frames, visual_feature, textual_feature
         )
-        self.loss_weight = self.loss_weight.to(logits)
-        loss = torch.nn.functional.cross_entropy(logits, label, weight=self.loss_weight)
+        loss = torch.nn.functional.cross_entropy(logits, label)
 
         y_hat = torch.nn.functional.softmax(logits, dim=-1)[:, 1]
         self.validation_auc.update(y_hat, label)
@@ -214,10 +210,7 @@ class MMDet(L.LightningModule):
             last_slice = final_logits[:, :, -1:].repeat(1, 1, diff)
             final_logits = torch.cat([final_logits, last_slice], dim=-1)
 
-        self.loss_weight = self.loss_weight.to(final_logits)
-        loss = torch.nn.functional.cross_entropy(
-            final_logits, label, weight=self.loss_weight
-        )
+        loss = torch.nn.functional.cross_entropy(final_logits, label)
         self.log_dict({"test_loss": loss}, sync_dist=True, prog_bar=True)
 
         y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, 1, :]
@@ -290,12 +283,11 @@ class MMDet(L.LightningModule):
         #     patience=self.config["patience"],
         #     cooldown=self.config["cooldown"],
         # )
-        scheduler = CosineAnnealingLR(optimizer, T_max=50)
+        scheduler = CosineAnnealingLR(optimizer, T_max=self.max_epochs)
         return [optimizer], [
             {
                 "scheduler": scheduler,
-                "interval": "step",
-                "frequency": 500,
+                "interval": "epoch",
                 "strict": True,
                 "monitor": "validation_auc",
             }
