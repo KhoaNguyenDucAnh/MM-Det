@@ -1,6 +1,5 @@
 import json
 import os
-import pickle
 import random
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -184,8 +183,8 @@ def validate_video(video, zarr_file, interval):
         if (
             video_length != reconstruct.shape[0]
             or video_length != label.shape[0]
-            or video_length // interval != visual.shape[1]
-            or video_length // interval != textual.shape[1]
+            or video_length // interval != visual.shape[0]
+            or video_length // interval != textual.shape[0]
         ):
             return None
         return (video, video_length)
@@ -241,14 +240,14 @@ class VideoDataset(Dataset):
         # Caching setup
         if cache_result_path is None:
             cache_result_path = (
-                os.path.splitext(cache_file_path)[0] + "_videos_cache.pkl"
+                os.path.splitext(cache_file_path)[0] + "_videos_cache.json"
             )
         self.cache_result_path = cache_result_path
 
         if os.path.exists(self.cache_result_path):
             print(f"Loading cached video list from {self.cache_result_path}")
-            with open(self.cache_result_path, "rb") as file:
-                self.videos = pickle.load(file)
+            with open(self.cache_result_path, "r") as file:
+                self.videos = json.load(file)
         else:
             print("Building video list in parallel...")
             all_videos = list(self.original.keys())
@@ -271,8 +270,8 @@ class VideoDataset(Dataset):
             self.videos = valid_videos
 
             # Save results to cache
-            with open(self.cache_result_path, "wb") as file:
-                pickle.dump(self.videos, file)
+            with open(self.cache_result_path, "w") as file:
+                json.dump(self.videos, file)
             print(f"Cached {len(self.videos)} valid videos to {self.cache_result_path}")
 
     def __len__(self):
