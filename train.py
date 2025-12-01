@@ -43,12 +43,17 @@ def main(args):
     trainer = L.Trainer(
         strategy="ddp_find_unused_parameters_true",
         callbacks=[model_checkpoint],
-        # limit_train_batches=500,
         accumulate_grad_batches=16,
         max_epochs=args["max_epochs"],
     )
 
-    trainer.fit(model, video_datamodule)
+    previous_checkpoint_path = ""
+    if previous_checkpoint_path != "":
+        checkpoint = torch.load(checkpoint_path)
+        video_datamodule.load_state_dict(checkpoint["VideoDataModule"])
+        trainer.fit(model, video_datamodule, ckpt_path=previous_checkpoint_path)
+    else:
+        trainer.fit(model, video_datamodule)
 
 
 if __name__ == "__main__":
