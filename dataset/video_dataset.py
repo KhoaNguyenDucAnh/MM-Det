@@ -449,22 +449,6 @@ class VideoDataModule(L.LightningDataModule):
             torch.stack(label_list),
         )
 
-    def predict_collate_fn(self, batch):
-        (
-            video_list,
-            original_frames_list,
-            reconstructed_frames_list,
-            visual_feature_list,
-            textual_feature_list,
-        ) = list(zip(*batch))
-        return (
-            video_list,
-            torch.stack(original_frames_list),
-            torch.stack(reconstructed_frames_list),
-            torch.stack(visual_feature_list),
-            torch.stack(textual_feature_list),
-        )
-
     def train_dataloader(self):
         return DataLoader(
             self.train,
@@ -492,7 +476,6 @@ class VideoDataModule(L.LightningDataModule):
     def predict_dataloader(self):
         return DataLoader(
             self.dataset,
-            batch_size=self.batch_size,
+            batch_size=1,
             num_workers=self.num_workers,
-            collate_fn=self.predict_collate_fn,
         )
