@@ -74,7 +74,8 @@ class MMDet(L.LightningModule):
         self.config = config
         self.window_size = config["window_size"]
         self.interval = config["interval"]
-        self.max_epochs = config["max_epochs"]
+        if "max_epochs" in config
+            self.max_epochs = config["max_epochs"]
         self.st_ckpt = config["st_ckpt"]
         self.lmm_ckpt = config["lmm_ckpt"]
         if (not self.st_ckpt or not os.path.exists(self.st_ckpt)) and config[
