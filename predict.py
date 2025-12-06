@@ -29,7 +29,7 @@ def main(args):
         mode="predict",
     )
 
-    model = MMDet.load_from_checkpoint(args["ckpt_path"], config=config)
+    model = MMDet.load_from_checkpoint(args["ckpt_path"], config=args)
 
     trainer = L.Trainer(
         strategy="ddp_find_unused_parameters_true", callbacks=[prediction_writer]

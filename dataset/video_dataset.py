@@ -253,7 +253,7 @@ class VideoDataset(Dataset):
                 self.videos = json.load(file)
         else:
             print("Building video list in parallel...")
-            all_videos = list(self.original.keys())
+            all_videos = list(self.original)
 
             valid_videos = []
             with ProcessPoolExecutor(max_workers=num_workers) as executor:
