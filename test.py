@@ -16,12 +16,12 @@ def main(args):
 
     os.makedirs(args["cache_dir"], exist_ok=True)
     cache_file_path = os.path.join(args["cache_dir"], args["cache_file_name"])
+    
     prediction_writer = CustomWriter(output_file=cache_file_path)
 
     video_dataset = VideoDataset(
         cache_file_path=cache_file_path,
         sample_method="entire",
-        interval=args["interval"],
         exclude_groups_name=["test"],
     )
     video_datamodule = VideoDataModule(
@@ -32,7 +32,6 @@ def main(args):
     )
 
     model = MMDet.load_from_checkpoint(args["ckpt_path"], config=args)
-    model.eval()
 
     trainer = L.Trainer(
         strategy="ddp_find_unused_parameters_true", callbacks=[prediction_writer]
