@@ -232,7 +232,48 @@ class MMDet(L.LightningModule):
             visual_feature,
             textual_feature,
         ) = batch
+        ###
+        # final_logits = []
+        # for timestamp in range(
+        #     0, original_frames.shape[1] - self.window_size + 1, self.window_size
+        # ):
+        #     logits = self.forward(
+        #         original_frames[
+        #             :,
+        #             timestamp : timestamp + self.window_size,
+        #             :,
+        #             :,
+        #             :,
+        #         ],
+        #         reconstructed_frames[
+        #             :,
+        #             timestamp : timestamp + self.window_size,
+        #             :,
+        #             :,
+        #             :,
+        #         ],
+        #         visual_feature[
+        #             :, timestamp // self.interval : timestamp // self.interval + 1, :
+        #         ],
+        #         textual_feature[
+        #             :, timestamp // self.interval : timestamp // self.interval + 1, :
+        #         ],
+        #     )
+        #     final_logits.append(logits.unsqueeze(-1).repeat(1, 1, 10))
+        # final_logits = torch.cat(final_logits, dim=-1)
 
+        # diff = original_frames.shape[1] - final_logits.shape[-1]
+        # if diff > 0:
+        #     last_slice = final_logits[:, :, -1:].repeat(1, 1, diff)
+        #     final_logits = torch.cat([final_logits, last_slice], dim=-1)
+
+        # y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, 1, :]
+        # y_hat = y_hat.detach().cpu().numpy()
+
+        # return {
+        #     os.path.join("predict", video_id): y_hat[index]
+        #     for index, video_id in enumerate(video_list)
+        # }
         
         center = self.window_size // 2
         final_logits = [None] * center
