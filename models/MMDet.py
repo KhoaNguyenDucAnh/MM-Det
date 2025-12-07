@@ -74,7 +74,7 @@ class MMDet(L.LightningModule):
         self.config = config
         self.window_size = config["window_size"]
         self.interval = config["interval"]
-        if "max_epochs" in config
+        if "max_epochs" in config:
             self.max_epochs = config["max_epochs"]
         self.st_ckpt = config["st_ckpt"]
         self.lmm_ckpt = config["lmm_ckpt"]
@@ -203,7 +203,7 @@ class MMDet(L.LightningModule):
                     :, timestamp // self.interval : timestamp // self.interval + 1, :
                 ],
             )
-            final_logits.append(logits.unsqueeze(-1).repeat(1, 1, 10))
+            final_logits.append(logits.unsqueeze(-1).repeat(1, 1, self.window_size))
         final_logits = torch.cat(final_logits, dim=-1)
 
         diff = original_frames.shape[1] - final_logits.shape[-1]
@@ -232,10 +232,12 @@ class MMDet(L.LightningModule):
             visual_feature,
             textual_feature,
         ) = batch
-        final_logits = []
-        for timestamp in range(
-            0, original_frames.shape[1] - self.window_size + 1, self.window_size
-        ):
+
+        
+        center = self.window_size // 2
+        final_logits = [None] * center
+
+        for timestamp in range(0, original_frames.shape[1] - self.window_size + 1):
             logits = self.forward(
                 original_frames[
                     :,
@@ -258,7 +260,14 @@ class MMDet(L.LightningModule):
                     :, timestamp // self.interval : timestamp // self.interval + 1, :
                 ],
             )
-            final_logits.append(logits.unsqueeze(-1).repeat(1, 1, 10))
+            final_logits.append(logits.unsqueeze(-1))
+
+        for i in range(center):
+            final_logits[i] = final_logits[center]
+
+        for i in range(original_frames.shape[1] - len(final_logits)):
+            final_logits.append(final_logits[-1])
+
         final_logits = torch.cat(final_logits, dim=-1)
 
         diff = original_frames.shape[1] - final_logits.shape[-1]
@@ -275,6 +284,21 @@ class MMDet(L.LightningModule):
         }
 
     def configure_optimizers(self):
+        # ###
+        # optimizer = Adam(self.parameters(), lr=1e-4)
+        # return optimizer
+
+        # ###
+        # optimizer = Adam(self.parameters())
+        # scheduler = OneCycleLR(
+        #     optimizer, max_lr=1e-3, pct_start=0.2, total_steps=self.trainer.estimated_stepping_batches
+        # )
+        # return {
+        #     "optimizer": optimizer,
+        #     "lr_scheduler": {"scheduler": scheduler, "interval": "step"},
+        # }
+
+        ###
         optimizer = Adam(self.parameters())
         scheduler = OneCycleLR(
             optimizer, max_lr=1e-3, total_steps=self.trainer.estimated_stepping_batches
@@ -288,7 +312,6 @@ class MMDet(L.LightningModule):
         self.log_dict(
             {
                 "train_loss": outputs["loss"],
-                "lr": self.trainer.lr_scheduler_configs[0].scheduler.get_last_lr()[0],
             },
             sync_dist=True,
             prog_bar=True,
