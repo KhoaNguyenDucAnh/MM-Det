@@ -210,15 +210,6 @@ class VideoDataset(Dataset):
         all_videos = list(self.original)
         self.videos = []
         for video in tqdm(all_videos):
-            if (
-                video not in zarr_file["id"]
-                or video not in zarr_file["original"]
-                or video not in zarr_file["reconstruct"]
-                or video not in zarr_file["visual"]
-                or video not in zarr_file["textual"]
-                or video not in zarr_file["label"]
-            ):
-                continue
             path = zarr_file["id"][video][0]
             original = zarr_file["original"][video]
             reconstruct = zarr_file["reconstruct"][video]
