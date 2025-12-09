@@ -1,7 +1,6 @@
 import json
 import os
 import random
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from math import ceil
 
 import cv2
@@ -165,36 +164,6 @@ class GenVidBenchDataModule(L.LightningDataModule):
         )
 
 
-def validate_video(video, zarr_file, interval):
-    """Validate a single video entry in parallel."""
-    try:
-        path = zarr_file["id"][video][0]
-        original = zarr_file["original"][video]
-        reconstruct = zarr_file["reconstruct"][video]
-        visual = zarr_file["visual"][video]
-        textual = zarr_file["textual"][video]
-        label = zarr_file["label"][video]
-
-        if not all([reconstruct, visual, textual, label]):
-            return None
-
-        video_length = original.shape[0]
-        if video_length < 10:
-            return None
-        # if "real_video_fake_audio" in path:
-        #     return None
-        if (
-            video_length != reconstruct.shape[0]
-            or video_length != label.shape[0]
-            or ceil(video_length / interval) != visual.shape[0]
-            or ceil(video_length / interval) != textual.shape[0]
-        ):
-            return None
-        return (video, video_length)
-    except Exception:
-        return None
-
-
 class VideoDataset(Dataset):
     def __init__(
         self,
@@ -242,19 +211,34 @@ class VideoDataset(Dataset):
 
         all_videos = list(self.original)
         self.videos = []
-        with ProcessPoolExecutor(max_workers=num_workers) as executor:
-            futures = {
-                executor.submit(validate_video, video, zarr_file, interval): video
-                for video in all_videos
-                if video not in self.exclude
-            }
+        for video in tqdm(all_videos):
+            path = zarr_file["id"][video][0]
+            original = zarr_file["original"][video]
+            reconstruct = zarr_file["reconstruct"][video]
+            visual = zarr_file["visual"][video]
+            textual = zarr_file["textual"][video]
+            label = zarr_file["label"][video]
 
-            for future in tqdm(
-                as_completed(futures), total=len(futures), desc="Validating"
+            if not all([reconstruct, visual, textual, label]):
+                continue
+
+            video_length = original.shape[0]
+            if video_length < 10:
+                continue
+
+            # AV1M
+            # if "real_video_fake_audio" in path:
+            #     continue
+
+            if (
+                video_length != reconstruct.shape[0]
+                or video_length != label.shape[0]
+                or ceil(video_length / interval) != visual.shape[0]
+                or ceil(video_length / interval) != textual.shape[0]
             ):
-                result = future.result()
-                if result:
-                    self.videos.append(result)
+                continue
+
+            self.videos.append((video, video_length))
 
     def __len__(self):
         return len(self.videos)
