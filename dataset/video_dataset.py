@@ -181,8 +181,8 @@ def validate_video(video, zarr_file, interval):
         video_length = original.shape[0]
         if video_length < 10:
             return None
-        # if "real_video_fake_audio" in path:
-        #     return None
+        if "real_video_fake_audio" in path:
+            return None
         if (
             video_length != reconstruct.shape[0]
             or video_length != label.shape[0]
@@ -240,21 +240,42 @@ class VideoDataset(Dataset):
                 if group_name in groups:
                     self.exclude |= set(zarr_file[group_name])
 
-        all_videos = list(self.original)
-        self.videos = []
-        with ProcessPoolExecutor(max_workers=num_workers) as executor:
-            futures = {
-                executor.submit(validate_video, video, zarr_file, interval): video
-                for video in all_videos
-                if video not in self.exclude
-            }
+        # Caching setup
+        if cache_result_path is None:
+            cache_result_path = (
+                os.path.splitext(cache_file_path)[0] + "_videos_cache.json"
+            )
+        self.cache_result_path = cache_result_path
 
-            for future in tqdm(
-                as_completed(futures), total=len(futures), desc="Validating"
-            ):
-                result = future.result()
-                if result:
-                    self.videos.append(result)
+        if os.path.exists(self.cache_result_path):
+            print(f"Loading cached video list from {self.cache_result_path}")
+            with open(self.cache_result_path, "r") as file:
+                self.videos = json.load(file)
+        else:
+            print("Building video list in parallel...")
+            all_videos = list(self.original)
+
+            valid_videos = []
+            with ProcessPoolExecutor(max_workers=num_workers) as executor:
+                futures = {
+                    executor.submit(validate_video, video, zarr_file, interval): video
+                    for video in all_videos
+                    if video not in self.exclude
+                }
+
+                for future in tqdm(
+                    as_completed(futures), total=len(futures), desc="Validating"
+                ):
+                    result = future.result()
+                    if result:
+                        valid_videos.append(result)
+
+            self.videos = valid_videos
+
+            # Save results to cache
+            with open(self.cache_result_path, "w") as file:
+                json.dump(self.videos, file)
+            print(f"Cached {len(self.videos)} valid videos to {self.cache_result_path}")
 
     def __len__(self):
         return len(self.videos)
