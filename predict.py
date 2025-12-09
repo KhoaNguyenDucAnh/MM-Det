@@ -20,7 +20,9 @@ def main(args):
     prediction_writer = CustomWriter(output_file=cache_file_path)
 
     video_dataset = VideoDataset(
-        cache_file_path=cache_file_path, sample_method="entire"
+        cache_file_path=cache_file_path,
+        sample_method="entire",
+        exclude_groups_name=["predict"],
     )
     video_datamodule = VideoDataModule(
         video_dataset,

@@ -274,7 +274,7 @@ class MMDet(L.LightningModule):
         #     os.path.join("predict", video_id): y_hat[index]
         #     for index, video_id in enumerate(video_list)
         # }
-        
+
         center = self.window_size // 2
         final_logits = [None] * center
 
@@ -329,20 +329,10 @@ class MMDet(L.LightningModule):
         # optimizer = Adam(self.parameters(), lr=1e-4)
         # return optimizer
 
-        # ###
-        # optimizer = Adam(self.parameters())
-        # scheduler = OneCycleLR(
-        #     optimizer, max_lr=1e-3, pct_start=0.2, total_steps=self.trainer.estimated_stepping_batches
-        # )
-        # return {
-        #     "optimizer": optimizer,
-        #     "lr_scheduler": {"scheduler": scheduler, "interval": "step"},
-        # }
-
         ###
         optimizer = Adam(self.parameters())
         scheduler = OneCycleLR(
-            optimizer, max_lr=1e-3, total_steps=self.trainer.estimated_stepping_batches
+            optimizer, max_lr=1e-4, total_steps=self.trainer.estimated_stepping_batches
         )
         return {
             "optimizer": optimizer,
@@ -353,6 +343,7 @@ class MMDet(L.LightningModule):
         self.log_dict(
             {
                 "train_loss": outputs["loss"],
+                "lr": self.trainer.lr_scheduler_configs[0].scheduler.get_last_lr()[0],
             },
             sync_dist=True,
             prog_bar=True,

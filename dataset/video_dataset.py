@@ -230,15 +230,14 @@ class VideoDataset(Dataset):
         self.transform = get_video_transformation_from_cfg(transform_cfg)
         self.repeat_sample_prob = repeat_sample_prob
         self.interval = interval
-        self.exclude_groups_name = exclude_groups_name
         self.mode = "train"
 
-        self.exclude = set()
+        exclude = set()
         groups = set(zarr_file)
-        if self.exclude_groups_name != None:
-            for group_name in self.exclude_groups_name:
+        if exclude_groups_name != None:
+            for group_name in exclude_groups_name:
                 if group_name in groups:
-                    self.exclude |= set(zarr_file[group_name])
+                    exclude |= set(zarr_file[group_name])
 
         # Caching setup
         if cache_result_path is None:
@@ -250,17 +249,14 @@ class VideoDataset(Dataset):
         if os.path.exists(self.cache_result_path):
             print(f"Loading cached video list from {self.cache_result_path}")
             with open(self.cache_result_path, "r") as file:
-                self.videos = json.load(file)
+                self.video_dict = json.load(file)
         else:
             print("Building video list in parallel...")
-            all_videos = list(self.original)
-
-            valid_videos = []
+            self.video_dict = {}
             with ProcessPoolExecutor(max_workers=num_workers) as executor:
                 futures = {
                     executor.submit(validate_video, video, zarr_file, interval): video
-                    for video in all_videos
-                    if video not in self.exclude
+                    for video in zarr_file["id"]
                 }
 
                 for future in tqdm(
@@ -268,20 +264,22 @@ class VideoDataset(Dataset):
                 ):
                     result = future.result()
                     if result:
-                        valid_videos.append(result)
-
-            self.videos = valid_videos
+                        video, video_length = result
+                        self.video_dict[video] = video_length
 
             # Save results to cache
             with open(self.cache_result_path, "w") as file:
-                json.dump(self.videos, file)
-            print(f"Cached {len(self.videos)} valid videos to {self.cache_result_path}")
+                json.dump(self.video_dict, file)
+            print(f"Cached {len(self.video_dict)} valid videos to {self.cache_result_path}")
+
+        self.video_id_list = list(set(self.video_dict.keys()) - self.exclude)
 
     def __len__(self):
-        return len(self.videos)
+        return len(self.video_id_list)
 
     def __getitem__(self, index):
-        video, video_length = self.videos[index]
+        video = self.video_id_list[index]
+        video_length = self.video_dict[video]
 
         if self.sample_size > video_length:
             raise ValueError(

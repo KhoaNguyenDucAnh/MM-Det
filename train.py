@@ -3,7 +3,6 @@ import os
 import lightning as L
 import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
 from dataset import VideoDataModule, VideoDataset
 from models import MMDet
@@ -34,11 +33,8 @@ def main(args):
         monitor="validation_auc",
         mode="max",
         dirpath=args["ckpt_dir"],
-        save_top_k=3,
+        save_top_k=-1,
         filename="MM-Det-{epoch:02d}-{validation_auc:.5f}",
-    )
-    early_stopping = EarlyStopping(
-        monitor="validation_loss", mode="min", patience=5, verbose=False
     )
 
     trainer = L.Trainer(
