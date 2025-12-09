@@ -232,13 +232,6 @@ class VideoDataset(Dataset):
         self.interval = interval
         self.mode = "train"
 
-        exclude = set()
-        groups = set(zarr_file)
-        if exclude_groups_name != None:
-            for group_name in exclude_groups_name:
-                if group_name in groups:
-                    exclude |= set(zarr_file[group_name])
-
         # Caching setup
         if cache_result_path is None:
             cache_result_path = (
@@ -270,9 +263,18 @@ class VideoDataset(Dataset):
             # Save results to cache
             with open(self.cache_result_path, "w") as file:
                 json.dump(self.video_dict, file)
-            print(f"Cached {len(self.video_dict)} valid videos to {self.cache_result_path}")
+            print(
+                f"Cached {len(self.video_dict)} valid videos to {self.cache_result_path}"
+            )
 
-        self.video_id_list = list(set(self.video_dict.keys()) - self.exclude)
+        exclude = set()
+        groups = set(zarr_file)
+        if exclude_groups_name != None:
+            for group_name in exclude_groups_name:
+                if group_name in groups:
+                    exclude |= set(zarr_file[group_name])
+
+        self.video_id_list = list(set(self.video_dict.keys()) - exclude)
 
     def __len__(self):
         return len(self.video_id_list)
