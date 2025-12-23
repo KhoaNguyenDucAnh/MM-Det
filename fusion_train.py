@@ -49,10 +49,10 @@ def main(args):
     previous_checkpoint_path = "" # "/scratch/gautschi/nguy1053/checkpoints/"
     if previous_checkpoint_path != "":
         checkpoint = torch.load(previous_checkpoint_path)
-        video_datamodule.load_state_dict(checkpoint["FusionDataModule"])
-        trainer.fit(model, video_datamodule, ckpt_path=previous_checkpoint_path)
+        fusion_datamodule.load_state_dict(checkpoint["FusionDataModule"])
+        trainer.fit(model, fusion_datamodule, ckpt_path=previous_checkpoint_path)
     else:
-        trainer.fit(model, video_datamodule)
+        trainer.fit(model, fusion_datamodule)
 
 
 if __name__ == "__main__":
