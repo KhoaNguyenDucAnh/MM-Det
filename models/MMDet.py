@@ -6,7 +6,7 @@ import torch
 from einops import rearrange
 from torch import nn
 from torch.optim import Adam
-from torch.optim.lr_scheduler import OneCycleLR
+from torch.optim.lr_scheduler import OneCycleLR, ReduceLROnPlateau
 from torchmetrics.classification import BinaryAUROC
 
 from .vit.stv_transformer_hybrid import vit_base_r50_s16_224_with_recons_iafa
@@ -226,7 +226,7 @@ class MMDet(L.LightningModule):
 
     def predict_step(self, batch):
         (
-            video_list,
+            video_id,
             original_frames,
             reconstructed_frames,
             visual_feature,
@@ -275,10 +275,14 @@ class MMDet(L.LightningModule):
         #     for index, video_id in enumerate(video_list)
         # }
 
+        repeat = 2
         center = self.window_size // 2
+        video_length = original_frames.shape[1]
         final_logits = [None] * center
 
-        for timestamp in range(0, original_frames.shape[1] - self.window_size + 1):
+        for timestamp in range(
+            0, video_length - self.window_size + 1, repeat
+        ):
             logits = self.forward(
                 original_frames[
                     :,
@@ -301,27 +305,24 @@ class MMDet(L.LightningModule):
                     :, timestamp // self.interval : timestamp // self.interval + 1, :
                 ],
             )
-            final_logits.append(logits.unsqueeze(-1))
+            for i in range(repeat):
+                if timestamp + i < video_length:
+                    final_logits.append(logits)
 
         for i in range(center):
             final_logits[i] = final_logits[center]
 
-        for i in range(original_frames.shape[1] - len(final_logits)):
+        for i in range(video_length - len(final_logits)):
             final_logits.append(final_logits[-1])
 
-        final_logits = torch.cat(final_logits, dim=-1)
+        final_logits = torch.stack(final_logits, dim=1) # 1 * video length * 2
 
-        diff = original_frames.shape[1] - final_logits.shape[-1]
-        if diff > 0:
-            last_slice = final_logits[:, :, -1:].repeat(1, 1, diff)
-            final_logits = torch.cat([final_logits, last_slice], dim=-1)
-
-        y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, 1, :]
+        y_hat = torch.nn.functional.softmax(final_logits, dim=2)[:, :, 1]
         y_hat = y_hat.detach().cpu().numpy()
 
         return {
-            os.path.join("predict", video_id): y_hat[index]
-            for index, video_id in enumerate(video_list)
+            os.path.join("logits", video_id): final_logits[0]
+            os.path.join("predict", video_id): y_hat[0],
         }
 
     def configure_optimizers(self):
@@ -330,7 +331,17 @@ class MMDet(L.LightningModule):
         # return optimizer
 
         ###
-        optimizer = Adam(self.parameters())
+        # optimizer = Adam(self.parameters(), lr=2e-5, weight_decay=1e-6)
+        # scheduler = ReduceLROnPlateau(
+        #     optimizer, mode="min", factor=0.2, min_lr=1e-8, patience=4, cooldown=5
+        # )
+        # return {
+        #     "optimizer": optimizer,
+        #     "lr_scheduler": {"scheduler": scheduler, "interval": "epoch", "monitor": "validation_loss", "strict": True},
+        # }
+
+        ###
+        optimizer = Adam(self.parameters(), weight_decay=1e-6)
         scheduler = OneCycleLR(
             optimizer, max_lr=1e-4, total_steps=self.trainer.estimated_stepping_batches
         )
