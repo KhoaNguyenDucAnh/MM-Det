@@ -7,6 +7,7 @@ import torch.nn as nn
 import zarr
 from torch.utils.data import DataLoader, Dataset
 from torchmetrics.classification import BinaryAUROC
+from tqdm import tqdm
 
 
 def validate_video(video, path, visual_logits, audio_logits):
@@ -67,7 +68,13 @@ class FusionDataset(Dataset):
             self.video_dict = {}
             with ProcessPoolExecutor(max_workers=num_workers) as executor:
                 futures = {
-                    executor.submit(validate_video, video, path[0], self.visual_logits, self.audio_logits): video
+                    executor.submit(
+                        validate_video,
+                        video,
+                        path[0],
+                        self.visual_logits,
+                        self.audio_logits,
+                    ): video
                     for video, path in visual_zarr_file["id"].items()
                 }
 
