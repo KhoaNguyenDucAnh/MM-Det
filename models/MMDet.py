@@ -168,62 +168,6 @@ class MMDet(L.LightningModule):
 
         return {"loss": loss}
 
-    def test_step(self, batch):
-        (
-            video_list,
-            original_frames,
-            reconstructed_frames,
-            visual_feature,
-            textual_feature,
-            label,
-        ) = batch
-        final_logits = []
-        for timestamp in range(
-            0, original_frames.shape[1] - self.window_size + 1, self.window_size
-        ):
-            logits = self.forward(
-                original_frames[
-                    :,
-                    timestamp : timestamp + self.window_size,
-                    :,
-                    :,
-                    :,
-                ],
-                reconstructed_frames[
-                    :,
-                    timestamp : timestamp + self.window_size,
-                    :,
-                    :,
-                    :,
-                ],
-                visual_feature[
-                    :, timestamp // self.interval : timestamp // self.interval + 1, :
-                ],
-                textual_feature[
-                    :, timestamp // self.interval : timestamp // self.interval + 1, :
-                ],
-            )
-            final_logits.append(logits.unsqueeze(-1).repeat(1, 1, self.window_size))
-        final_logits = torch.cat(final_logits, dim=-1)
-
-        diff = original_frames.shape[1] - final_logits.shape[-1]
-        if diff > 0:
-            last_slice = final_logits[:, :, -1:].repeat(1, 1, diff)
-            final_logits = torch.cat([final_logits, last_slice], dim=-1)
-
-        loss = torch.nn.functional.cross_entropy(final_logits, label)
-        self.log_dict({"test_loss": loss}, sync_dist=True, prog_bar=True)
-
-        y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, 1, :]
-        self.test_auc.update(y_hat, label)
-
-        y_hat = y_hat.detach().cpu().numpy()
-
-        return {"loss": loss} | {
-            os.path.join("test", video_id): y_hat[index]
-            for index, video_id in enumerate(video_list)
-        }
-
     def predict_step(self, batch):
         (
             video_id,
@@ -232,57 +176,12 @@ class MMDet(L.LightningModule):
             visual_feature,
             textual_feature,
         ) = batch
-        ###
-        # final_logits = []
-        # for timestamp in range(
-        #     0, original_frames.shape[1] - self.window_size + 1, self.window_size
-        # ):
-        #     logits = self.forward(
-        #         original_frames[
-        #             :,
-        #             timestamp : timestamp + self.window_size,
-        #             :,
-        #             :,
-        #             :,
-        #         ],
-        #         reconstructed_frames[
-        #             :,
-        #             timestamp : timestamp + self.window_size,
-        #             :,
-        #             :,
-        #             :,
-        #         ],
-        #         visual_feature[
-        #             :, timestamp // self.interval : timestamp // self.interval + 1, :
-        #         ],
-        #         textual_feature[
-        #             :, timestamp // self.interval : timestamp // self.interval + 1, :
-        #         ],
-        #     )
-        #     final_logits.append(logits.unsqueeze(-1).repeat(1, 1, 10))
-        # final_logits = torch.cat(final_logits, dim=-1)
-
-        # diff = original_frames.shape[1] - final_logits.shape[-1]
-        # if diff > 0:
-        #     last_slice = final_logits[:, :, -1:].repeat(1, 1, diff)
-        #     final_logits = torch.cat([final_logits, last_slice], dim=-1)
-
-        # y_hat = torch.nn.functional.softmax(final_logits, dim=-1)[:, 1, :]
-        # y_hat = y_hat.detach().cpu().numpy()
-
-        # return {
-        #     os.path.join("predict", video_id): y_hat[index]
-        #     for index, video_id in enumerate(video_list)
-        # }
-
         repeat = 2
         center = self.window_size // 2
         video_length = original_frames.shape[1]
         final_logits = [None] * center
 
-        for timestamp in range(
-            0, video_length - self.window_size + 1, repeat
-        ):
+        for timestamp in range(0, video_length - self.window_size + 1, repeat):
             logits = self.forward(
                 original_frames[
                     :,
@@ -315,14 +214,13 @@ class MMDet(L.LightningModule):
         for i in range(video_length - len(final_logits)):
             final_logits.append(final_logits[-1])
 
-        final_logits = torch.stack(final_logits, dim=1) # 1 * video length * 2
+        final_logits = torch.stack(final_logits, dim=1)  # 1 * video length * 2
 
         y_hat = torch.nn.functional.softmax(final_logits, dim=2)[:, :, 1]
         y_hat = y_hat.detach().cpu().numpy()
 
         return {
             os.path.join("logits", video_id): final_logits[0]
-            os.path.join("predict", video_id): y_hat[0],
         }
 
     def configure_optimizers(self):
@@ -354,7 +252,9 @@ class MMDet(L.LightningModule):
         self.log_dict(
             {
                 "train_loss": outputs["loss"],
-                "lr": self.trainer.lr_scheduler_configs[0].scheduler.get_last_lr()[0],
+                "lr": self.trainer.lr_scheduler_configs[
+                    0
+                ].scheduler.optimizer.param_groups[0]["lr"],
             },
             sync_dist=True,
             prog_bar=True,

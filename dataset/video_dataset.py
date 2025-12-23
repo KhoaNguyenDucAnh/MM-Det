@@ -181,8 +181,8 @@ def validate_video(video, zarr_file, interval):
         video_length = original.shape[0]
         if video_length < 10:
             return None
-        if "real_video_fake_audio" in path:
-            return None
+        # if "real_video_fake_audio" in path:
+        #     return None
         if (
             video_length != reconstruct.shape[0]
             or video_length != label.shape[0]
@@ -460,14 +460,6 @@ class VideoDataModule(L.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(
             self.validation,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            collate_fn=self.collate_fn,
-        )
-
-    def test_dataloader(self):
-        return DataLoader(
-            self.dataset,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             collate_fn=self.collate_fn,
