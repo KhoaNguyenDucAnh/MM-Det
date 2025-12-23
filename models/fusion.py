@@ -63,7 +63,7 @@ class FusionDataset(Dataset):
         if os.path.exists(self.cache_result_path):
             print(f"Loading cached video list from {self.cache_result_path}")
             with open(self.cache_result_path, "r") as file:
-                self.video_set = json.load(file)
+                self.video_dict = json.load(file)
         else:
             print("Building video list in parallel...")
             self.video_dict = {}
