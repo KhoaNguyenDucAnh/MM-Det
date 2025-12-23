@@ -125,9 +125,9 @@ class FusionDataset(Dataset):
             return (  # 25 FPS, 160ms 320ms 640ms
                 video,
                 self.visual_logits[video],
-                self.audio_logits[audio_path]["16"],
-                self.audio_logits[audio_path]["32"],
-                self.audio_logits[audio_path]["64"],
+                self.audio_logits[audio_path]["16"][:, :2],
+                self.audio_logits[audio_path]["32"][:, :2],
+                self.audio_logits[audio_path]["64"][:, :2],
             )
             return
         else:
@@ -135,9 +135,18 @@ class FusionDataset(Dataset):
             return (  # 25 FPS, 160ms 320ms 640ms
                 video,
                 self.visual_logits[video][frame],
-                self.audio_logits[audio_path]["16"][frame // 4],
-                self.audio_logits[audio_path]["32"][frame // 8],
-                self.audio_logits[audio_path]["64"][frame // 16],
+                self.audio_logits[audio_path]["16"][
+                    min(frame // 4, self.audio_logits[audio_path]["16"].shape[0] - 1),
+                    :2,
+                ],
+                self.audio_logits[audio_path]["32"][
+                    min(frame // 8, self.audio_logits[audio_path]["32"].shape[0] - 1),
+                    :2,
+                ],
+                self.audio_logits[audio_path]["64"][
+                    min(frame // 16, self.audio_logits[audio_path]["64"].shape[0] - 1),
+                    :2,
+                ],
                 self.label[video][frame],
             )
 
@@ -293,7 +302,7 @@ class Fusion(L.LightningModule):
             audio_64_logits,
             label,
         ) = batch
-        
+
         logits = self.forward(
             torch.cat(
                 [visual_logits, audio_16_logits, audio_32_logits, audio_64_logits],
@@ -315,7 +324,7 @@ class Fusion(L.LightningModule):
             audio_32_logits,
             audio_64_logits,
         ) = batch
-        
+
         logits = self.forward(
             torch.cat(
                 [visual_logits, audio_16_logits, audio_32_logits, audio_64_logits],
@@ -339,7 +348,7 @@ class Fusion(L.LightningModule):
         final_logits = torch.stack(final_logits, dim=1)
         final_logits = final_logits.detach().cpu().numpy()
 
-        return {os.path.join(self.predict_path, video_id[0]): final_logits[0]}
+        return {os.path.join(self.predict_path, video[0]): final_logits[0]}
 
     def configure_optimizers(self):
         # ###
