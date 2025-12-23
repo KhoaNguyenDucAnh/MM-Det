@@ -47,11 +47,10 @@ class FusionDataset(Dataset):
         self.mode = "train"
 
         visual_zarr_file = zarr.open_group(visual_cache_file_path, mode="r")
-        self.visual_logits = zarr_file[visual_logits]
-        self.label = zarr_file["label"]
+        self.visual_logits = visual_zarr_file[visual_logits]
+        self.label = visual_zarr_file["label"]
 
-        audio_zarr_file = zarr.open_group(audio_cache_file_path, mode="r")
-        self.audio_logits = audio_zarr_file
+        self.audio_logits = zarr.open_group(audio_cache_file_path, mode="r")
 
         # Caching setup
         if cache_result_path is None:
