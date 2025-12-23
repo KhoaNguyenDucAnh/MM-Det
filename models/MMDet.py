@@ -215,9 +215,7 @@ class MMDet(L.LightningModule):
             final_logits.append(final_logits[-1])
 
         final_logits = torch.stack(final_logits, dim=1)  # 1 * video length * 2
-
-        y_hat = torch.nn.functional.softmax(final_logits, dim=2)[:, :, 1]
-        y_hat = y_hat.detach().cpu().numpy()
+        final_logits = final_logits.detach().cpu().numpy()
 
         return {
             os.path.join("logits", video_id[0]): final_logits[0]
