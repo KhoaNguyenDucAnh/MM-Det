@@ -106,8 +106,8 @@ class FusionDataset(Dataset):
         self.video_id_list_train = []
         for video in self.video_id_list_predict:
             self.video_id_list_train += [
-                (video, frame, self.video_id_list[video][1])
-                for frame in range(self.video_id_list[video][0])
+                (video, frame, self.video_dict[video][1])
+                for frame in range(self.video_dict[video][0])
             ]
 
     def __len__(self):
