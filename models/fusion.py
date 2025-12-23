@@ -9,21 +9,18 @@ from torch.utils.data import DataLoader, Dataset
 from torchmetrics.classification import BinaryAUROC
 
 
-def validate_video(video, visual_zarr_file, audio_zarr_file):
+def validate_video(video, path, visual_logits, audio_logits):
     """Validate a single video entry in parallel."""
     try:
         prefix = 50  # len("/scratch/gautschi/nguy1053/AV-Deepfake1M-PlusPlus/")
         suffix = -4  # .mp4
-        path = visual_zarr_file["id"][video][
-            0
-        ]  # /scratch/gautschi/nguy1053/AV-Deepfake1M-PlusPlus/vox_celeb_2/id01358/_1nATum8x78/00030/real_video_fake_audio.mp4
-        visual_logits = visual_zarr_file["predict"][video]
+        visual_logits = visual_logits[video]
         video_length = visual_logits.shape[0]
 
         audio_path = path[prefix:suffix].replace("/", "_")
-        audio_16_logits = audio_zarr_file[audio_path]["16"]
-        audio_32_logits = audio_zarr_file[audio_path]["32"]
-        audio_64_logits = audio_zarr_file[audio_path]["64"]
+        audio_16_logits = audio_logits[audio_path]["16"]
+        audio_32_logits = audio_logits[audio_path]["32"]
+        audio_64_logits = audio_logits[audio_path]["64"]
 
         if not all([visual_logits, audio_16_logits, audio_32_logits, audio_64_logits]):
             return None
@@ -70,8 +67,8 @@ class FusionDataset(Dataset):
             self.video_dict = {}
             with ProcessPoolExecutor(max_workers=num_workers) as executor:
                 futures = {
-                    executor.submit(validate_video, video, zarr_file, interval): video
-                    for video in visual_zarr_file["id"]
+                    executor.submit(validate_video, video, path[0], self.visual_logits, self.audio_logits): video
+                    for video, path in visual_zarr_file["id"].items()
                 }
 
                 for future in tqdm(
