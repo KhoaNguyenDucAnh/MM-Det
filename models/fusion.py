@@ -95,11 +95,11 @@ class FusionDataset(Dataset):
             )
 
         exclude = set()
-        groups = set(zarr_file)
+        groups = set(visual_zarr_file)
         if exclude_groups_name != None:
             for group_name in exclude_groups_name:
                 if group_name in groups:
-                    exclude |= set(zarr_file[group_name])
+                    exclude |= set(visual_zarr_file[group_name])
 
         self.video_id_list_predict = list(set(self.video_dict.keys()) - exclude)
 
