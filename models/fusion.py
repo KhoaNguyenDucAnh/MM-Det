@@ -104,7 +104,7 @@ class FusionDataset(Dataset):
         self.video_id_list_predict = list(set(self.video_dict.keys()) - exclude)
 
         self.video_id_list_train = []
-        for video in temp:
+        for video in self.video_id_list_predict:
             self.video_id_list_train += [
                 (video, frame, self.video_id_list[video][1])
                 for frame in range(self.video_id_list[video][0])
