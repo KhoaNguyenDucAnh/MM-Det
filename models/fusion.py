@@ -3,6 +3,7 @@ import os
 import lightning as L
 import torch
 import torch.nn as nn
+import zarr
 from torch.utils.data import DataLoader, Dataset
 from torchmetrics.classification import BinaryAUROC
 
