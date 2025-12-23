@@ -102,6 +102,7 @@ class BaseOption:
             default=4,
             help="number for dataloader workers per gpu",
         )
+        self.parser.add_argument("--predict-path", type=str, help="predict path")
 
     def parse(self):
         return self.parser.parse_args()
