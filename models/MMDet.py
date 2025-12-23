@@ -111,7 +111,6 @@ class MMDet(L.LightningModule):
 
         self.train_auc = BinaryAUROC()
         self.validation_auc = BinaryAUROC()
-        self.test_auc = BinaryAUROC()
 
     def forward(
         self, original_frames, reconstructed_frames, visual_feature, textual_feature
@@ -277,9 +276,3 @@ class MMDet(L.LightningModule):
             prog_bar=True,
         )
         self.validation_auc.reset()
-
-    def on_test_epoch_end(self):
-        self.log_dict(
-            {"test_auc": self.test_auc.compute()}, sync_dist=True, prog_bar=True
-        )
-        self.test_auc.reset()

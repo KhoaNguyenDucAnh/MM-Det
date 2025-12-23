@@ -383,9 +383,9 @@ class VideoDataModule(L.LightningDataModule):
         self.mode = mode
         self.split = split
 
-        if mode not in ["train", "test", "predict"]:
+        if mode not in ["train", "predict"]:
             raise ValueError(
-                f'Mode should be either "train", "test", or "predict", but not {mode}'
+                f'Mode should be either "train" or "predict", but not {mode}'
             )
 
         if mode == "train":
