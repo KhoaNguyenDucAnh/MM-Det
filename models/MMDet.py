@@ -220,7 +220,7 @@ class MMDet(L.LightningModule):
         y_hat = y_hat.detach().cpu().numpy()
 
         return {
-            os.path.join("logits", video_id): final_logits[0]
+            os.path.join("logits", video_id[0]): final_logits[0]
         }
 
     def configure_optimizers(self):
