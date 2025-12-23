@@ -285,6 +285,15 @@ class Fusion(L.LightningModule):
         return {"loss": loss}
 
     def validation_step(self, batch):
+        (
+            video,
+            visual_logits,
+            audio_16_logits,
+            audio_32_logits,
+            audio_64_logits,
+            label,
+        ) = batch
+        
         logits = self.forward(
             torch.cat(
                 [visual_logits, audio_16_logits, audio_32_logits, audio_64_logits],
@@ -306,6 +315,7 @@ class Fusion(L.LightningModule):
             audio_32_logits,
             audio_64_logits,
         ) = batch
+        
         logits = self.forward(
             torch.cat(
                 [visual_logits, audio_16_logits, audio_32_logits, audio_64_logits],
