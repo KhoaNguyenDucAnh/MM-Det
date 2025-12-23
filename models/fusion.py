@@ -259,7 +259,7 @@ class Fusion(L.LightningModule):
     def forward(self, X):
         return self.model(X)
 
-    def train_step(self, batch):
+    def training_step(self, batch):
         (
             video,
             visual_logits,
