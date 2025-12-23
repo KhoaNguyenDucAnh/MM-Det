@@ -9,7 +9,6 @@ import lightning as L
 import numpy as np
 import torch
 import zarr
-from datasets import load_dataset
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset, random_split
 from tqdm import tqdm
