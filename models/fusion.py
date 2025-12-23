@@ -71,7 +71,7 @@ class FusionDataset(Dataset):
             with ProcessPoolExecutor(max_workers=num_workers) as executor:
                 futures = {
                     executor.submit(validate_video, video, zarr_file, interval): video
-                    for video in zarr_file["id"]
+                    for video in visual_zarr_file["id"]
                 }
 
                 for future in tqdm(
