@@ -6,6 +6,8 @@ import lightning as L
 import torch
 import torch.nn as nn
 import zarr
+from torch.optim import Adam
+from torch.optim.lr_scheduler import OneCycleLR, ReduceLROnPlateau
 from torch.utils.data import DataLoader, Dataset, random_split
 from torchmetrics.classification import BinaryAUROC
 from tqdm import tqdm
