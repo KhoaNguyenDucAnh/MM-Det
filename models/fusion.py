@@ -131,7 +131,7 @@ class FusionDataset(Dataset):
             )
             return
         else:
-            video, frame, audio_path = self.video_id_list[index]
+            video, frame, audio_path = self.video_id_list_train[index]
             return (  # 25 FPS, 160ms 320ms 640ms
                 video,
                 self.visual_logits[video][frame],
