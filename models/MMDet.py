@@ -74,6 +74,7 @@ class MMDet(L.LightningModule):
         self.config = config
         self.window_size = config["window_size"]
         self.interval = config["interval"]
+        self.predict_path = config["predict_path"]
         if "max_epochs" in config:
             self.max_epochs = config["max_epochs"]
         self.st_ckpt = config["st_ckpt"]
@@ -218,7 +219,7 @@ class MMDet(L.LightningModule):
         final_logits = final_logits.detach().cpu().numpy()
 
         return {
-            os.path.join("logits", video_id[0]): final_logits[0]
+            os.path.join(self.predict_path, video_id[0]): final_logits[0]
         }
 
     def configure_optimizers(self):
