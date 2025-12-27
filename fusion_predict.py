@@ -43,7 +43,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    opt = TrainOption()
+    opt = TestOption()
     args = opt.parse().__dict__
 
     main(args)
