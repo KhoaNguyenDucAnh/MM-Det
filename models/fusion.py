@@ -335,7 +335,6 @@ class Fusion(L.LightningModule):
             final_logits.append(logits)
         final_logits = torch.stack(final_logits)
         final_logits = final_logits.detach().cpu().numpy()
-        print(final_logits.shape)
 
         return {os.path.join(self.predict_path, video): final_logits}
 
