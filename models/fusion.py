@@ -209,24 +209,6 @@ class FusionDataModule(L.LightningDataModule):
             self.dataset = self.dataset_obj
             self.dataset.mode = self.mode
 
-    def collate_fn(self, batch):
-        (
-            video_list,
-            visual_logits,
-            audio_16_logits,
-            audio_32_logits,
-            audio_64_logits,
-            label_list,
-        ) = list(zip(*batch))
-        return (
-            video_list,
-            torch.stack(visual_logits),
-            torch.stack(audio_16_logits),
-            torch.stack(audio_32_logits),
-            torch.stack(audio_64_logits),
-            torch.stack(label_list),
-        )
-
     def train_dataloader(self):
         return DataLoader(
             self.train,
@@ -253,6 +235,7 @@ class FusionDataModule(L.LightningDataModule):
             self.dataset,
             batch_size=1,
             num_workers=self.num_workers,
+            collate_fn=lambda x: x,
         )
 
 
@@ -323,32 +306,38 @@ class Fusion(L.LightningModule):
             audio_16_logits,
             audio_32_logits,
             audio_64_logits,
-        ) = batch
+        ) = batch[0]
 
-        logits = self.forward(
-            torch.cat(
-                [visual_logits, audio_16_logits, audio_32_logits, audio_64_logits],
-                dim=1,
-            )
-        )
+        len_audio_16_logits = audio_16_logits.shape[0]
+        len_audio_32_logits = audio_32_logits.shape[0]
+        len_audio_64_logits = audio_64_logits.shape[0]
         final_logits = []
-        for i in range(visual_logits.shape[-1]):
+        for i in range(visual_logits.shape[0]):
             logits = self.forward(
                 torch.cat(
                     [
-                        visual_logits[0, :, i],
-                        audio_16_logits[0, :, i // 4],
-                        audio_32_logits[0, :, i // 8],
-                        audio_64_logits[0, :, i // 16],
-                    ],
-                    dim=1,
+                        torch.tensor(visual_logits[i], device=self.device),
+                        torch.tensor(
+                            audio_16_logits[min(i // 4, len_audio_16_logits - 1)],
+                            device=self.device,
+                        ),
+                        torch.tensor(
+                            audio_32_logits[min(i // 8, len_audio_32_logits - 1)],
+                            device=self.device,
+                        ),
+                        torch.tensor(
+                            audio_64_logits[min(i // 16, len_audio_64_logits - 1)],
+                            device=self.device,
+                        ),
+                    ]
                 )
             )
             final_logits.append(logits)
-        final_logits = torch.stack(final_logits, dim=1)
+        final_logits = torch.stack(final_logits)
         final_logits = final_logits.detach().cpu().numpy()
+        print(final_logits.shape)
 
-        return {os.path.join(self.predict_path, video[0]): final_logits[0]}
+        return {os.path.join(self.predict_path, video): final_logits}
 
     def configure_optimizers(self):
         # ###

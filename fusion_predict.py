@@ -6,8 +6,8 @@ import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
 
 from models.fusion import *
-from options.train_options import TrainOption
-from utils.utils import set_random_seed
+from options.test_options import TestOption
+from utils.utils import CustomWriter, set_random_seed
 
 
 def main(args):
@@ -33,7 +33,7 @@ def main(args):
         mode="predict",
     )
 
-    model = Fusionload_from_checkpoint(args["ckpt_path"], config=args)
+    model = Fusion.load_from_checkpoint(args["ckpt_path"], config=args)
 
     trainer = L.Trainer(
         strategy="ddp_find_unused_parameters_true", callbacks=[prediction_writer]
