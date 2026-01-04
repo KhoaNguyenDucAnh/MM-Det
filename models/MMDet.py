@@ -218,7 +218,8 @@ class MMDet(L.LightningModule):
         final_logits = final_logits.detach().cpu().numpy()
 
         return {
-            os.path.join(self.predict_path, video_id[0]): final_logits[0]
+            os.path.join(self.predict_path, video_id[0]): final_logits[0],
+            os.path.join(self.predict_path + "_flag", video_id[0]): np.array([1]),
         }
 
     def configure_optimizers(self):
@@ -246,17 +247,17 @@ class MMDet(L.LightningModule):
             "lr_scheduler": {"scheduler": scheduler, "interval": "step"},
         }
 
-    def on_train_batch_end(self, outputs, batch, batch_idx):
-        self.log_dict(
-            {
-                "train_loss": outputs["loss"],
-                "lr": self.trainer.lr_scheduler_configs[
-                    0
-                ].scheduler.optimizer.param_groups[0]["lr"],
-            },
-            sync_dist=True,
-            prog_bar=True,
-        )
+    # def on_train_batch_end(self, outputs, batch, batch_idx):
+    #     self.log_dict(
+    #         {
+    #             "train_loss": outputs["loss"],
+    #             "lr": self.trainer.lr_scheduler_configs[
+    #                 0
+    #             ].scheduler.optimizer.param_groups[0]["lr"],
+    #         },
+    #         sync_dist=True,
+    #         prog_bar=True,
+    #     )
 
     def on_train_epoch_end(self):
         self.log_dict(
@@ -264,10 +265,10 @@ class MMDet(L.LightningModule):
         )
         self.train_auc.reset()
 
-    def on_validation_batch_end(self, outputs, batch, batch_idx):
-        self.log_dict(
-            {"validation_loss": outputs["loss"]}, sync_dist=True, prog_bar=True
-        )
+    # def on_validation_batch_end(self, outputs, batch, batch_idx):
+    #     self.log_dict(
+    #         {"validation_loss": outputs["loss"]}, sync_dist=True, prog_bar=True
+    #     )
 
     def on_validation_epoch_end(self):
         self.log_dict(
