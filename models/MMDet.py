@@ -1,4 +1,5 @@
 import os
+import random
 
 import lightning as L
 import numpy as np
@@ -74,7 +75,16 @@ class MMDet(L.LightningModule):
         self.config = config
         self.window_size = config["window_size"]
         self.interval = config["interval"]
-        self.predict_path = config["predict_path"]
+
+        if "predict_path" in config:
+            self.predict_path = config["predict_path"]
+            if "predict_flag" in config:
+                self.predict_flag = config["predict_flag"]
+            else:
+                # Use a local RNG instance to set flag
+                rng = random.Random()
+                self.predict_flag = rng.randint(0, 2**64)
+
         if "max_epochs" in config:
             self.max_epochs = config["max_epochs"]
         self.st_ckpt = config["st_ckpt"]
@@ -113,7 +123,11 @@ class MMDet(L.LightningModule):
         self.validation_auc = BinaryAUROC()
 
     def forward(
-        self, original_frames, reconstructed_frames, visual_feature, textual_feature
+        self,
+        original_frames,
+        reconstructed_frames,
+        visual_feature,
+        textual_feature,
     ):
         x_st = self.backbone(
             (original_frames, reconstructed_frames)
@@ -214,11 +228,14 @@ class MMDet(L.LightningModule):
         for i in range(video_length - len(final_logits)):
             final_logits.append(final_logits[-1])
 
-        final_logits = torch.stack(final_logits, dim=1)  # 1 * video length * 2
+        final_logits = torch.stack(final_logits, dim=1)  # shape: (1, video length, 2)
         final_logits = final_logits.detach().cpu().numpy()
 
         return {
-            os.path.join(self.predict_path, video_id[0]): final_logits[0]
+            os.path.join(self.predict_path, video_id[0]): final_logits[0],
+            os.path.join(self.predict_path + "_flag", video_id[0]): np.array(
+                [self.predict_flag]
+            ),
         }
 
     def configure_optimizers(self):

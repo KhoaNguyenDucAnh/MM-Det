@@ -1,5 +1,6 @@
 import json
 import os
+import random
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import lightning as L
@@ -243,7 +244,14 @@ class Fusion(L.LightningModule):
     def __init__(self, config):
         super().__init__()
 
-        self.predict_path = config["predict_path"]
+        if "predict_path" in config:
+            self.predict_path = config["predict_path"]
+            if "predict_flag" in config:
+                self.predict_flag = config["predict_flag"]
+            else:
+                # Use a local RNG instance to set flag
+                rng = random.Random()
+                self.predict_flag = rng.randint(0, 2**64)
 
         self.model = nn.Linear(8, 2)
 
@@ -336,7 +344,12 @@ class Fusion(L.LightningModule):
         final_logits = torch.stack(final_logits)
         final_logits = final_logits.detach().cpu().numpy()
 
-        return {os.path.join(self.predict_path, video): final_logits}
+        return {
+            os.path.join(self.predict_path, video): final_logits,
+            os.path.join(self.predict_path + "_flag", video_id[0]): np.array(
+                [self.predict_flag]
+            ),
+        }
 
     def configure_optimizers(self):
         # ###
