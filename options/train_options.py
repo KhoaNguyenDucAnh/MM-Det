@@ -52,3 +52,6 @@ class TrainOption(BaseOption):
         self.parser.add_argument(
             "--max-epochs", type=int, default=50, help="max epochs"
         )
+        self.parser.add_argument(
+            "--visual-logits", type=str,
+        )

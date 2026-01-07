@@ -19,7 +19,7 @@ def main(args):
     fusion_dataset = FusionDataset(
         visual_cache_file_path="/scratch/gautschi/nguy1053/cache/av1m.zarr",
         audio_cache_file_path="/scratch/gautschi/nguy1053/cache/audio.zarr",
-        visual_logits="onecycle",
+        visual_logits=args["visual_logits"],
     )
     fusion_datamodule = FusionDataModule(
         fusion_dataset,
@@ -36,7 +36,9 @@ def main(args):
         mode="max",
         dirpath=args["ckpt_dir"],
         save_top_k=-1,
-        filename="Fusion-one-cycle-lr-{epoch:02d}-{lr:.6f}-{validation_auc:.6f}",
+        filename="Fusion-"
+        + args["visual_logits"]
+        + "-{epoch:02d}-{lr:.6f}-{validation_auc:.6f}",
     )
 
     trainer = L.Trainer(
@@ -46,7 +48,7 @@ def main(args):
         max_epochs=args["max_epochs"],
     )
 
-    previous_checkpoint_path = "" # "/scratch/gautschi/nguy1053/checkpoints/"
+    previous_checkpoint_path = ""  # "/scratch/gautschi/nguy1053/checkpoints/"
     if previous_checkpoint_path != "":
         checkpoint = torch.load(previous_checkpoint_path)
         fusion_datamodule.load_state_dict(checkpoint["FusionDataModule"])
