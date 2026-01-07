@@ -17,13 +17,13 @@ def main(args):
     cache_file_path = os.path.join(args["cache_dir"], args["cache_file_name"])
 
     prediction_writer = CustomWriter(
-        output_file="/scratch/gautschi/nguy1053/cache/av1m.zarr"
+        output_file="/scratch/gautschi/nguy1053/cache/av1m_val.zarr"
     )
 
     fusion_dataset = FusionDataset(
         visual_cache_file_path="/scratch/gautschi/nguy1053/cache/av1m_val.zarr",
         audio_cache_file_path="/scratch/gautschi/nguy1053/cache/audio_val.zarr",
-        visual_logits="onecycle",
+        visual_logits=args["visual_logits"],
         exclude_groups_name=[args["predict_path"]],
     )
     fusion_datamodule = FusionDataModule(

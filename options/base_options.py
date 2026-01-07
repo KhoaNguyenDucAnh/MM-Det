@@ -102,6 +102,10 @@ class BaseOption:
             default=4,
             help="number for dataloader workers per gpu",
         )
+        self.parser.add_argument(
+            "--visual-logits",
+            type=str,
+        )
 
     def parse(self):
         return self.parser.parse_args()
