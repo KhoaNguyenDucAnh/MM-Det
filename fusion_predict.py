@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
 
-from models.fusion import *
+from models import Fusion, FusionDataModule, FusionDataset
 from options.test_options import TestOption
 from utils.utils import CustomWriter, set_random_seed
 
