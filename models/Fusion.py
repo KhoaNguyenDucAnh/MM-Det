@@ -59,8 +59,6 @@ class FusionDataset(Dataset):
         if cache_result_path is None:
             cache_result_path = (
                 os.path.splitext(visual_cache_file_path)[0]
-                + "_"
-                + visual_logits
                 + "_fusion_videos_cache.json"
             )
         self.cache_result_path = cache_result_path
