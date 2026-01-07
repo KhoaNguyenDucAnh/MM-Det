@@ -21,8 +21,8 @@ def main(args):
     )
 
     fusion_dataset = FusionDataset(
-        visual_cache_file_path="/scratch/gautschi/nguy1053/cache/av1m.zarr",
-        audio_cache_file_path="/scratch/gautschi/nguy1053/cache/audio.zarr",
+        visual_cache_file_path="/scratch/gautschi/nguy1053/cache/av1m_val.zarr",
+        audio_cache_file_path="/scratch/gautschi/nguy1053/cache/audio_val.zarr",
         visual_logits="onecycle",
         exclude_groups_name=[args["predict_path"]],
     )
