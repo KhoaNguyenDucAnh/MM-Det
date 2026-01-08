@@ -351,7 +351,7 @@ class Fusion(L.LightningModule):
 
         return {
             os.path.join(self.predict_path, video): final_logits,
-            os.path.join(self.predict_path + "_flag", video_id[0]): np.array(
+            os.path.join(self.predict_path + "_flag", video): np.array(
                 [self.predict_flag]
             ),
         }
