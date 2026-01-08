@@ -4,6 +4,7 @@ import random
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import lightning as L
+import numpy as np
 import torch
 import torch.nn as nn
 import zarr
@@ -20,7 +21,9 @@ def validate_video(mode, video, path, visual_logits, audio_logits):
         if mode == "train":
             prefix = 50  # len("/scratch/gautschi/nguy1053/AV-Deepfake1M-PlusPlus/")
         else:
-            prefix = 58  # len("/scratch/gautschi/nguy1053/AV-Deepfake1M-PlusPlus/val/val/")
+            prefix = (
+                58  # len("/scratch/gautschi/nguy1053/AV-Deepfake1M-PlusPlus/val/val/")
+            )
         suffix = -4  # .mp4
         visual_logits = visual_logits[video]
         video_length = visual_logits.shape[0]
