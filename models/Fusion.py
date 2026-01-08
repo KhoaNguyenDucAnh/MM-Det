@@ -14,10 +14,13 @@ from torchmetrics.classification import BinaryAUROC
 from tqdm import tqdm
 
 
-def validate_video(video, path, visual_logits, audio_logits):
+def validate_video(mode, video, path, visual_logits, audio_logits):
     """Validate a single video entry in parallel."""
     try:
-        prefix = 50  # len("/scratch/gautschi/nguy1053/AV-Deepfake1M-PlusPlus/")
+        if mode == "train":
+            prefix = 50  # len("/scratch/gautschi/nguy1053/AV-Deepfake1M-PlusPlus/")
+        else:
+            prefix = 58  # len("/scratch/gautschi/nguy1053/AV-Deepfake1M-PlusPlus/val/val/")
         suffix = -4  # .mp4
         visual_logits = visual_logits[video]
         video_length = visual_logits.shape[0]
@@ -41,13 +44,14 @@ class FusionDataset(Dataset):
         visual_cache_file_path,
         audio_cache_file_path,
         visual_logits,
+        mode="train",
         exclude_groups_name=None,
         cache_result_path=None,
         num_workers=8,
     ):
         super().__init__()
 
-        self.mode = "train"
+        self.mode = mode
 
         visual_zarr_file = zarr.open_group(visual_cache_file_path, mode="r")
         self.visual_logits = visual_zarr_file[visual_logits]
@@ -74,6 +78,7 @@ class FusionDataset(Dataset):
                 futures = {
                     executor.submit(
                         validate_video,
+                        self.mode,
                         video,
                         path[0],
                         self.visual_logits,
